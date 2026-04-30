@@ -527,9 +527,12 @@ nav {
       <div class="card-header">
         <div class="card-title" id="chart-title">Graphique de prix — XAU/USD</div>
         <div class="timeframe-bar">
-          <button class="tf-btn active" onclick="setTf(this,'1H')">1H</button>
-          <button class="tf-btn" onclick="setTf(this,'4H')">4H</button>
-          <button class="tf-btn" onclick="setTf(this,'1J')">1J</button>
+          <button class="tf-btn" onclick="setTf(this,'1min')">1M</button>
+          <button class="tf-btn" onclick="setTf(this,'3min')">3M</button>
+          <button class="tf-btn" onclick="setTf(this,'15min')">15M</button>
+          <button class="tf-btn active" onclick="setTf(this,'1h')">1H</button>
+          <button class="tf-btn" onclick="setTf(this,'4h')">4H</button>
+          <button class="tf-btn" onclick="setTf(this,'1day')">1J</button>
         </div>
       </div>
       <div class="chart-wrap" id="chartContainer"></div>
@@ -631,7 +634,8 @@ const ASSETS = {
 };
 
 let currentAsset = 'XAUUSD';
-let currentTf    = '1H';
+let currentTf    = '1h';
+let lastData     = null;
 let alerts       = [];
 
 // ── Helpers ──────────────────────────────────────────────────────────────
@@ -653,6 +657,20 @@ function selectAsset(btn) {
 function setTf(btn, tf) {
   document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active'); currentTf=tf;
+  if(lastData) reloadChart();
+}
+
+async function reloadChart() {
+  const btn=document.getElementById('btn-launch');
+  btn.disabled=true; btn.textContent='⟳ Chargement graphique…';
+  try {
+    const res=await fetch(`/api/data?asset=${currentAsset}&tf=${currentTf}`);
+    const d=await res.json();
+    if(d.ok && d.candles && d.candles.length) {
+      renderCandleChart(d.candles, d.ema20Series, d.ema50Series);
+    }
+  } catch(e){ console.error(e); }
+  btn.disabled=false; btn.textContent='↗ Relancer l'analyse IA';
 }
 function resetUI() {
   ['m-price','m-change','m-rsi','m-trend','i-macd','i-ema','i-boll','i-vol','i-sup','i-res','score-num']
@@ -779,10 +797,11 @@ async function launchAnalysis() {
   try {
     // ✅ Appel au backend Vercel — aucun problème CORS
     btn.textContent='⟳ Données live…';
-    const res = await fetch(`/api/data?asset=${currentAsset}`);
+    const res = await fetch(`/api/data?asset=${currentAsset}&tf=${currentTf}`);
     if(!res.ok) throw new Error(`Erreur serveur ${res.status}`);
     const d = await res.json();
     if(!d.ok) throw new Error(d.error||'Données indisponibles');
+    lastData = d;
 
     const { price, changePct, rsi, macd, macdSig, macdHist,
             ema20, ema50, bbUpper, bbMid, bbLower, candles } = d;
