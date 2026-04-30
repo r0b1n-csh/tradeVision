@@ -623,23 +623,29 @@ nav {
   </button>
 
 </div>
-
 <script>
 const ASSETS = {
-  XAUUSD: { name:'XAU/USD', full:'Or / Dollar',   unit:'$', dec:2 },
-  BTCUSD: { name:'BTC/USD', full:'Bitcoin',        unit:'$', dec:0 },
-  SOLUSD: { name:'SOL/USD', full:'Solana',         unit:'$', dec:2 },
-  CAC40:  { name:'CAC 40',  full:'CAC 40 (Paris)', unit:'',  dec:0 },
-  SP500:  { name:'S&P 500', full:'S&P 500 (USA)',  unit:'',  dec:0 },
+  XAUUSD: { name:'XAU/USD', full:'Or / Dollar (XAU/USD)', unit:'$', dec:2 },
+  BTCUSD: { name:'BTC/USD', full:'Bitcoin (BTC/USD)',      unit:'$', dec:0 },
+  SOLUSD: { name:'SOL/USD', full:'Solana (SOL/USD)',       unit:'$', dec:2 },
+  CAC40:  { name:'CAC 40',  full:'CAC 40 (Paris)',         unit:'',  dec:0 },
+  SP500:  { name:'S&P 500', full:'S&P 500 (USA)',          unit:'',  dec:0 },
 };
 
 let currentAsset = 'XAUUSD';
 let currentTf    = '1h';
-let lastData     = null;
 let alerts       = [];
+let lastFetchOk  = false;
+
+// Chart objects
+let lwChart        = null;
+let cSeries        = null; // candlestick
+let vSeries        = null; // volume
+let e20Series      = null; // EMA20 line
+let e50Series      = null; // EMA50 line
 
 // ── Helpers ──────────────────────────────────────────────────────────────
-function fmt(n, dec) { return n.toLocaleString('fr-FR', { minimumFractionDigits:dec, maximumFractionDigits:dec }); }
+function fmt(n, dec) { return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
 function setEl(id, text) { const e=document.getElementById(id); if(e) e.textContent=text; }
 function setSig(id, val, up, down) {
   const el=document.getElementById(id); if(!el) return;
@@ -649,40 +655,33 @@ function setSig(id, val, up, down) {
 
 function selectAsset(btn) {
   document.querySelectorAll('.asset-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active'); currentAsset=btn.dataset.asset;
+  btn.classList.add('active');
+  currentAsset=btn.dataset.asset;
   setEl('analysis-asset-name', ASSETS[currentAsset].name);
   setEl('chart-title','Graphique de prix — '+ASSETS[currentAsset].name);
   resetUI();
 }
+
 function setTf(btn, tf) {
   document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active'); currentTf=tf;
-  if(lastData) reloadChart();
+  btn.classList.add('active');
+  currentTf=tf;
+  if(lastFetchOk) launchAnalysis();
 }
 
-async function reloadChart() {
-  const btn=document.getElementById('btn-launch');
-  btn.disabled=true; btn.textContent='⟳ Chargement graphique…';
-  try {
-    const res=await fetch(`/api/data?asset=${currentAsset}&tf=${currentTf}`);
-    const d=await res.json();
-    if(d.ok && d.candles && d.candles.length) {
-      renderCandleChart(d.candles, d.ema20Series, d.ema50Series);
-    }
-  } catch(e){ console.error(e); }
-  btn.disabled=false; btn.textContent='↗ Relancer l'analyse IA';
-}
 function resetUI() {
   ['m-price','m-change','m-rsi','m-trend','i-macd','i-ema','i-boll','i-vol','i-sup','i-res','score-num']
     .forEach(id=>setEl(id,'—'));
   ['i-macd-s','i-ema-s','i-boll-s','i-vol-s'].forEach(id=>setSig(id,'—','',''));
-  setEl('sig-name','En attente'); document.getElementById('sig-name').className='signal-name neu';
+  setEl('sig-name','En attente');
+  document.getElementById('sig-name').className='signal-name neu';
   document.getElementById('sig-icon').textContent='—';
   document.getElementById('sig-icon').style.color='var(--text3)';
   setEl('sig-conf',"Lance l'analyse pour obtenir un signal");
   document.getElementById('score-fill').style.cssText='width:50%;background:var(--text3)';
   setEl('analysis-text',"Sélectionne un actif et lance l'analyse.");
   document.getElementById('analysis-text').classList.add('analysis-placeholder');
+  lastFetchOk=false;
 }
 
 // ── Alerts ───────────────────────────────────────────────────────────────
@@ -695,96 +694,119 @@ function addAlert(type, title, desc) {
       <div class="alert-time">${a.time}</div>
     </div>`).join('');
 }
-function clearAlerts() { alerts=[]; document.getElementById('alerts-list').innerHTML='<div class="no-alerts">Aucune alerte</div>'; }
-
-// ── Chart ────────────────────────────────────────────────────────────────
-// ── Lightweight Charts (TradingView) ────────────────────────────────────
-
-let lwChart = null, candleSeries = null, ema20Series = null, ema50Series = null, volumeSeries = null;
-
-function initChart() {
-  const container = document.getElementById('chartContainer');
-  if (lwChart) { lwChart.remove(); lwChart = null; }
-  lwChart = LightweightCharts.createChart(container, {
-    width:  container.clientWidth,
-    height: 320,
-    layout: { background: { color: '#100d1a' }, textColor: '#9b91c0' },
-    grid: {
-      vertLines: { color: 'rgba(120,80,255,0.06)' },
-      horzLines: { color: 'rgba(120,80,255,0.06)' },
-    },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor: 'rgba(120,80,255,0.2)', textColor: '#5a5278' },
-    timeScale: { borderColor: 'rgba(120,80,255,0.2)', timeVisible: true, secondsVisible: false },
-    handleScroll: true,
-    handleScale: true,
-  });
-
-  candleSeries = lwChart.addCandlestickSeries({
-    upColor:        '#2dff9b',
-    downColor:      '#ff4d6a',
-    borderUpColor:  '#2dff9b',
-    borderDownColor:'#ff4d6a',
-    wickUpColor:    '#2dff9b',
-    wickDownColor:  '#ff4d6a',
-  });
-
-  volumeSeries = lwChart.addHistogramSeries({
-    priceFormat: { type: 'volume' },
-    priceScaleId: 'vol',
-    scaleMargins: { top: 0.85, bottom: 0 },
-  });
-
-  ema20Series = lwChart.addLineSeries({
-    color: '#7850ff', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, title: 'EMA20',
-  });
-  ema50Series = lwChart.addLineSeries({
-    color: '#ffb830', lineWidth: 1.5, priceLineVisible: false, lastValueVisible: false, title: 'EMA50',
-  });
-
-  window.addEventListener('resize', () => {
-    if (lwChart) lwChart.applyOptions({ width: container.clientWidth });
-  });
+function clearAlerts() {
+  alerts=[];
+  document.getElementById('alerts-list').innerHTML='<div class="no-alerts">Aucune alerte</div>';
 }
 
-function renderCandleChart(candles, ema20S, ema50S) {
-  if (!lwChart) initChart();
+// ── Chart (Lightweight Charts TradingView) ────────────────────────────────
+function initChart() {
+  const container = document.getElementById('chartContainer');
+  if(!container) return;
+  if(lwChart) { lwChart.remove(); lwChart=null; cSeries=null; vSeries=null; e20Series=null; e50Series=null; }
 
-  // Sort by time ascending
-  const sorted = [...candles].sort((a, b) => a.time - b.time);
+  lwChart = LightweightCharts.createChart(container, {
+    width:  container.clientWidth || 600,
+    height: 320,
+    layout: { background:{color:'#100d1a'}, textColor:'#9b91c0' },
+    grid:   { vertLines:{color:'rgba(120,80,255,0.06)'}, horzLines:{color:'rgba(120,80,255,0.06)'} },
+    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+    rightPriceScale: { borderColor:'rgba(120,80,255,0.2)' },
+    timeScale: { borderColor:'rgba(120,80,255,0.2)', timeVisible:true, secondsVisible:false },
+  });
 
-  candleSeries.setData(sorted.map(c => ({
-    time: c.time, open: c.open, high: c.high, low: c.low, close: c.close,
+  cSeries = lwChart.addCandlestickSeries({
+    upColor:'#2dff9b', downColor:'#ff4d6a',
+    borderUpColor:'#2dff9b', borderDownColor:'#ff4d6a',
+    wickUpColor:'#2dff9b', wickDownColor:'#ff4d6a',
+  });
+
+  vSeries = lwChart.addHistogramSeries({
+    priceFormat:{type:'volume'}, priceScaleId:'vol',
+    scaleMargins:{top:0.85, bottom:0},
+  });
+
+  e20Series = lwChart.addLineSeries({ color:'#7850ff', lineWidth:1.5, priceLineVisible:false, lastValueVisible:true, title:'EMA20' });
+  e50Series = lwChart.addLineSeries({ color:'#ffb830', lineWidth:1.5, priceLineVisible:false, lastValueVisible:true, title:'EMA50' });
+
+  window.addEventListener('resize', ()=>{ if(lwChart) lwChart.applyOptions({width:container.clientWidth}); });
+}
+
+function loadChart(candles, ema20S, ema50S) {
+  if(!lwChart) initChart();
+  if(!candles || !candles.length) { fallbackChart(2350); return; }
+
+  const sorted = [...candles].sort((a,b)=>a.time-b.time);
+
+  cSeries.setData(sorted.map(c=>({ time:c.time, open:c.open, high:c.high, low:c.low, close:c.close })));
+
+  vSeries.setData(sorted.map(c=>({
+    time:c.time, value:c.volume||0,
+    color: c.close>=c.open ? 'rgba(45,255,155,0.25)' : 'rgba(255,77,106,0.25)',
   })));
 
-  volumeSeries.setData(sorted.map(c => ({
-    time: c.time,
-    value: c.volume || 0,
-    color: c.close >= c.open ? 'rgba(45,255,155,0.3)' : 'rgba(255,77,106,0.3)',
-  })));
-
-  if (ema20S && ema20S.length) ema20Series.setData([...ema20S].sort((a,b)=>a.time-b.time));
-  if (ema50S && ema50S.length) ema50Series.setData([...ema50S].sort((a,b)=>a.time-b.time));
+  if(ema20S && ema20S.length) e20Series.setData([...ema20S].sort((a,b)=>a.time-b.time));
+  if(ema50S && ema50S.length) e50Series.setData([...ema50S].sort((a,b)=>a.time-b.time));
 
   lwChart.timeScale().fitContent();
 }
 
 function fallbackChart(price) {
-  if (!lwChart) initChart();
-  const now = Math.floor(Date.now() / 1000);
-  const candles = [];
-  let v = price * 0.993;
-  for (let i = 59; i >= 0; i--) {
-    const o = v;
-    v += (Math.random() - 0.47) * price * 0.002;
-    const h = Math.max(o, v) * (1 + Math.random() * 0.001);
-    const l = Math.min(o, v) * (1 - Math.random() * 0.001);
-    candles.push({ time: now - i * 3600, open: o, high: h, low: l, close: v, volume: 0 });
+  if(!lwChart) initChart();
+  const now = Math.floor(Date.now()/1000);
+  const candles=[], ema20S=[], ema50S=[];
+  let v=price*0.993, ema=v;
+  for(let i=119;i>=0;i--) {
+    const o=v;
+    v += (Math.random()-0.47)*price*0.002;
+    const h=Math.max(o,v)*(1+Math.random()*0.001);
+    const l=Math.min(o,v)*(1-Math.random()*0.001);
+    const t=now-i*3600;
+    candles.push({time:t, open:parseFloat(o.toFixed(4)), high:parseFloat(h.toFixed(4)), low:parseFloat(l.toFixed(4)), close:parseFloat(v.toFixed(4)), volume:0});
+    ema = v*0.1 + ema*0.9;
+    ema20S.push({time:t, value:parseFloat(ema.toFixed(4))});
+    ema50S.push({time:t, value:parseFloat((ema*0.998).toFixed(4))});
   }
-  renderCandleChart(candles, [], []);
+  loadChart(candles, ema20S, ema50S);
 }
 
-// ── Main analysis ─────────────────────────────────────────────────────────
+// ── Sentiment ─────────────────────────────────────────────────────────────
+async function loadSentiment(asset) {
+  try {
+    const res=await fetch(`/api/news?asset=${asset}`);
+    if(!res.ok) throw new Error(`News ${res.status}`);
+    const d=await res.json();
+    if(!d.ok) throw new Error(d.error);
+    const score=d.sentimentScore;
+    const label=d.sentimentLabel;
+    const fill=document.getElementById('sent-fill');
+    fill.style.width=score+'%';
+    fill.style.background=score>=60?'var(--green)':score<=40?'var(--red)':'var(--amber)';
+    setEl('sent-score',score+'/100');
+    const badge=document.getElementById('sent-badge');
+    badge.textContent=label;
+    badge.className='sentiment-badge '+(label==='Haussier'?'up':label==='Baissier'?'down':'neu');
+    setEl('sent-counts',`↑ ${d.totalPos} positifs · ↓ ${d.totalNeg} négatifs`);
+    const newsList=document.getElementById('news-list');
+    if(!d.articles||!d.articles.length){ newsList.innerHTML='<div class="no-alerts">Aucune news trouvée</div>'; return; }
+    newsList.innerHTML=d.articles.slice(0,6).map(a=>{
+      const cls=a.sentiment==='positive'?'pos':a.sentiment==='negative'?'neg':'neu';
+      const time=a.publishedAt?new Date(a.publishedAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+      return `<a class="news-item" href="${a.url}" target="_blank" rel="noopener">
+        <div class="news-dot ${cls}"></div>
+        <div class="news-body"><div class="news-title">${a.title||'Sans titre'}</div><div class="news-meta">${a.source}·${time}</div></div>
+      </a>`;
+    }).join('');
+    const assetName=ASSETS[asset].name;
+    if(score>=65) addAlert('buy','Sentiment HAUSSIER — '+assetName,'Score news : '+score+'/100');
+    else if(score<=35) addAlert('sell','Sentiment BAISSIER — '+assetName,'Score news : '+score+'/100');
+  } catch(e) {
+    console.error('News error:',e);
+    document.getElementById('news-list').innerHTML='<div class="no-alerts">News indisponibles</div>';
+  }
+}
+
+// ── Main Analysis ─────────────────────────────────────────────────────────
 async function launchAnalysis() {
   const btn=document.getElementById('btn-launch');
   const dot=document.getElementById('status-dot');
@@ -795,26 +817,24 @@ async function launchAnalysis() {
   const u=asset.unit; const dec=asset.dec;
 
   try {
-    // ✅ Appel au backend Vercel — aucun problème CORS
     btn.textContent='⟳ Données live…';
-    const res = await fetch(`/api/data?asset=${currentAsset}&tf=${currentTf}`);
+    const res=await fetch(`/api/data?asset=${currentAsset}&tf=${currentTf}`);
     if(!res.ok) throw new Error(`Erreur serveur ${res.status}`);
-    const d = await res.json();
+    const d=await res.json();
     if(!d.ok) throw new Error(d.error||'Données indisponibles');
-    lastData = d;
 
-    const { price, changePct, rsi, macd, macdSig, macdHist,
-            ema20, ema50, bbUpper, bbMid, bbLower, candles } = d;
+    const {price, changePct, rsi, macd, macdSig, macdHist,
+           ema20, ema50, bbUpper, bbMid, bbLower, candles, analysis, ema20Series, ema50Series} = d;
 
     // ── Métriques ──
     setEl('m-price',(u||'')+fmt(price,dec));
     const chEl=document.getElementById('m-change');
-    chEl.textContent=(changePct>=0?'+':'')+changePct.toFixed(2)+'%';
+    chEl.textContent=(changePct>=0?'+':'')+Number(changePct).toFixed(2)+'%';
     chEl.className='metric-val '+(changePct>0?'up':changePct<0?'down':'neu');
     setEl('m-change-sub',changePct>0?'En hausse':'En baisse');
 
     const rsiEl=document.getElementById('m-rsi');
-    rsiEl.textContent=rsi.toFixed(1);
+    rsiEl.textContent=Number(rsi).toFixed(1);
     rsiEl.className='metric-val '+(rsi>70?'down':rsi<30?'up':'neu');
     setEl('m-rsi-sub',rsi>70?'Suracheté':rsi<30?'Survendu':'Neutre');
 
@@ -824,7 +844,7 @@ async function launchAnalysis() {
     setEl('m-trend-sub','vs EMA 50');
 
     // ── Indicateurs ──
-    const macdStr=(macd>=0?'+':'')+macd.toFixed(dec>0?3:2);
+    const macdStr=(macd>=0?'+':'')+Number(macd).toFixed(dec>0?3:2);
     setEl('i-macd',macdStr);
     setSig('i-macd-s',macd>macdSig?'Haussier':'Baissier','Haussier','Baissier');
     setEl('i-ema',ema20>ema50?'EMA20 > EMA50':'EMA20 < EMA50');
@@ -841,13 +861,13 @@ async function launchAnalysis() {
 
     // ── Score ──
     let score=50;
-    if(rsi<30)score+=20;else if(rsi>70)score-=20;
-    else if(rsi<45)score+=8;else if(rsi>55)score-=8;
-    if(macd>macdSig)score+=15;else score-=15;
-    if(ema20>ema50)score+=12;else score-=12;
-    if(price>bbMid)score+=5;else score-=5;
-    if(bbSig==='Survente')score+=8;else if(bbSig==='Surachat')score-=8;
-    if(changePct>0)score+=5;else score-=5;
+    if(rsi<30)score+=20; else if(rsi>70)score-=20;
+    else if(rsi<45)score+=8; else if(rsi>55)score-=8;
+    if(macd>macdSig)score+=15; else score-=15;
+    if(ema20>ema50)score+=12; else score-=12;
+    if(price>bbMid)score+=5; else score-=5;
+    if(bbSig==='Survente')score+=8; else if(bbSig==='Surachat')score-=8;
+    if(changePct>0)score+=5; else score-=5;
     score=Math.max(0,Math.min(100,Math.round(score)));
 
     setEl('score-num',score+'/100');
@@ -871,97 +891,44 @@ async function launchAnalysis() {
     snEl.textContent=signal; snEl.className='signal-name '+sm.cls;
     setEl('sig-conf','Confiance : '+confidence+'%');
 
-    // ── Graphique réel ──
-    if(candles&&candles.length){
-      renderCandleChart(d.candles, d.ema20Series, d.ema50Series);
-    } else { fallbackChart(price); }
-
-    // ── Analyse IA — fournie par le backend (pas de CORS) ──
+    // ── Analyse IA ──
     const atEl=document.getElementById('analysis-text');
-    atEl.textContent=d.analysis||'Analyse indisponible.';
+    atEl.textContent=analysis||'Analyse indisponible.';
     atEl.classList.remove('analysis-placeholder');
 
+    // ── Graphique candlesticks ──
+    loadChart(candles, ema20Series, ema50Series);
 
     // ── Alertes ──
-    if(score>=65) addAlert('buy','Signal ACHAT — '+asset.name,'Score '+score+'/100 · RSI '+rsi.toFixed(1));
-    else if(score<=35) addAlert('sell','Signal VENTE — '+asset.name,'Score '+score+'/100 · RSI '+rsi.toFixed(1));
+    if(score>=65) addAlert('buy','Signal ACHAT — '+asset.name,'Score '+score+'/100 · RSI '+Number(rsi).toFixed(1));
+    else if(score<=35) addAlert('sell','Signal VENTE — '+asset.name,'Score '+score+'/100 · RSI '+Number(rsi).toFixed(1));
     else addAlert('info','Analyse terminée — '+asset.name,'Signal neutre · Score '+score+'/100');
-    if(rsi>72) addAlert('sell','RSI suracheté — '+asset.name,'RSI '+rsi.toFixed(1)+' · Retournement possible');
-    if(rsi<28) addAlert('buy','RSI survendu — '+asset.name,'RSI '+rsi.toFixed(1)+' · Rebond potentiel');
-    if(bbSig==='Survente') addAlert('buy','Bollinger survente — '+asset.name,'Prix sous la bande basse');
+    if(rsi>72) addAlert('sell','RSI suracheté — '+asset.name,'RSI '+Number(rsi).toFixed(1));
+    if(rsi<28) addAlert('buy','RSI survendu — '+asset.name,'RSI '+Number(rsi).toFixed(1));
+    if(bbSig==='Survente') addAlert('buy','Bollinger survente — '+asset.name,'Prix sous bande basse');
     if(bbSig==='Surachat') addAlert('sell','Bollinger surachat — '+asset.name,'Prix au-dessus bande haute');
 
+    lastFetchOk=true;
     dot.className='status-dot live';
     setEl('status-text','Live · '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
-    // Charger le sentiment en parallèle (non bloquant)
+
+    // Sentiment en parallèle
     loadSentiment(currentAsset);
 
   } catch(e) {
     console.error(e);
     addAlert('sell','Erreur',e.message||'Problème inconnu');
     dot.className='status-dot'; setEl('status-text','Erreur');
-    setEl('analysis-text','Erreur : '+e.message);
-    document.getElementById('analysis-text').classList.remove('analysis-placeholder');
+    const atEl=document.getElementById('analysis-text');
+    atEl.textContent='Erreur : '+e.message;
+    atEl.classList.remove('analysis-placeholder');
   }
 
   btn.disabled=false; btn.classList.remove('loading');
   btn.textContent='↗ Relancer l\'analyse IA';
 }
 
-
-// ── Sentiment / News ──────────────────────────────────────────────────────
-
-async function loadSentiment(asset) {
-  try {
-    const res = await fetch(`/api/news?asset=${asset}`);
-    if (!res.ok) throw new Error(`News API ${res.status}`);
-    const d = await res.json();
-    if (!d.ok) throw new Error(d.error);
-
-    const score = d.sentimentScore;
-    const label = d.sentimentLabel;
-
-    // Score bar
-    const fill = document.getElementById('sent-fill');
-    fill.style.width = score + '%';
-    fill.style.background = score >= 60 ? 'var(--green)' : score <= 40 ? 'var(--red)' : 'var(--amber)';
-    document.getElementById('sent-score').textContent = score + '/100';
-
-    // Badge
-    const badge = document.getElementById('sent-badge');
-    badge.textContent = label;
-    badge.className = 'sentiment-badge ' + (label === 'Haussier' ? 'up' : label === 'Baissier' ? 'down' : 'neu');
-    document.getElementById('sent-counts').textContent = `↑ ${d.totalPos} positifs · ↓ ${d.totalNeg} négatifs`;
-
-    // Articles
-    const newsList = document.getElementById('news-list');
-    if (!d.articles || !d.articles.length) {
-      newsList.innerHTML = '<div class="no-alerts">Aucune news trouvée</div>';
-      return;
-    }
-    newsList.innerHTML = d.articles.slice(0, 6).map(a => {
-      const cls = a.sentiment === 'positive' ? 'pos' : a.sentiment === 'negative' ? 'neg' : 'neu';
-      const time = a.publishedAt ? new Date(a.publishedAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-      return `<a class="news-item" href="${a.url}" target="_blank" rel="noopener">
-        <div class="news-dot ${cls}"></div>
-        <div class="news-body">
-          <div class="news-title">${a.title || 'Sans titre'}</div>
-          <div class="news-meta">${a.source} · ${time}</div>
-        </div>
-      </a>`;
-    }).join('');
-
-    // Alerte si sentiment fort
-    const assetName = ASSETS[asset].name;
-    if (score >= 65) addAlert('buy', 'Sentiment HAUSSIER — ' + assetName, 'Score news : ' + score + '/100 · ' + d.totalPos + ' signaux positifs');
-    else if (score <= 35) addAlert('sell', 'Sentiment BAISSIER — ' + assetName, 'Score news : ' + score + '/100 · ' + d.totalNeg + ' signaux négatifs');
-
-  } catch(e) {
-    console.error('News error:', e);
-    document.getElementById('news-list').innerHTML = '<div class="no-alerts">News indisponibles : ' + e.message + '</div>';
-  }
-}
-
+// Init
 initChart();
 fallbackChart(2350);
 </script>
