@@ -57,10 +57,21 @@ async function fetchTD(endpoint, params) {
   return r.json();
 }
 
-async function getTwelveData(symbol) {
+async function getTwelveData(symbol, tf = '1h') {
+  // Map tf to Twelve Data interval + outputsize
+  const TF_MAP = {
+    '1min':  { interval: '1min',  outputsize: 200 },
+    '3min':  { interval: '3min',  outputsize: 200 },
+    '15min': { interval: '15min', outputsize: 200 },
+    '1h':    { interval: '1h',    outputsize: 120 },
+    '4h':    { interval: '4h',    outputsize: 120 },
+    '1day':  { interval: '1day',  outputsize: 180 },
+  };
+  const { interval, outputsize } = TF_MAP[tf] || TF_MAP['1h'];
+
   const [quote, ts] = await Promise.all([
     fetchTD('/quote',       { symbol }),
-    fetchTD('/time_series', { symbol, interval: '1h', outputsize: 60 }),
+    fetchTD('/time_series', { symbol, interval, outputsize }),
   ]);
 
   const price     = parseFloat(quote.close || quote.price || 0);
@@ -83,11 +94,11 @@ async function getTwelveData(symbol) {
   let rsi, macd, macdSig, macdHist, ema20, ema50, bbUpper, bbMid, bbLower;
   try {
     const [rsiD, macdD, ema20D, ema50D, bbD] = await Promise.all([
-      fetchTD('/rsi',    { symbol, interval: '1h', time_period: 14, outputsize: 1 }),
-      fetchTD('/macd',   { symbol, interval: '1h', outputsize: 1 }),
-      fetchTD('/ema',    { symbol, interval: '1h', time_period: 20, outputsize: 1 }),
-      fetchTD('/ema',    { symbol, interval: '1h', time_period: 50, outputsize: 1 }),
-      fetchTD('/bbands', { symbol, interval: '1h', time_period: 20, outputsize: 1 }),
+      fetchTD('/rsi',    { symbol, interval, time_period: 14, outputsize: 1 }),
+      fetchTD('/macd',   { symbol, interval, outputsize: 1 }),
+      fetchTD('/ema',    { symbol, interval, time_period: 20, outputsize: 1 }),
+      fetchTD('/ema',    { symbol, interval, time_period: 50, outputsize: 1 }),
+      fetchTD('/bbands', { symbol, interval, time_period: 20, outputsize: 1 }),
     ]);
     rsi      = safe(rsiD.values   ? parseFloat(rsiD.values[0].rsi)              : null, calcRSI(closes));
     macd     = safe(macdD.values  ? parseFloat(macdD.values[0].macd)            : null, calcMACD(closes).macd);
@@ -114,10 +125,12 @@ async function getTwelveData(symbol) {
            bbUpper, bbMid, bbLower, candles, closes, ema20Series, ema50Series };
 }
 
-async function getCoinGecko(cgId) {
+async function getCoinGecko(cgId, tf = '1h') {
+  const CG_DAYS = { '1min':'1', '3min':'1', '15min':'1', '1h':'1', '4h':'7', '1day':'30' };
+  const days = CG_DAYS[tf] || '1';
   const [marketRes, chartRes] = await Promise.all([
     fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${cgId}`),
-    fetch(`https://api.coingecko.com/api/v3/coins/${cgId}/ohlc?vs_currency=usd&days=1`),
+    fetch(`https://api.coingecko.com/api/v3/coins/${cgId}/ohlc?vs_currency=usd&days=${days}`),
   ]);
   const [market, ohlcRaw] = await Promise.all([marketRes.json(), chartRes.json()]);
 
@@ -197,7 +210,8 @@ export default async function handler(req, res) {
 
   try {
     const sym  = SYMBOLS[asset];
-    const data = sym.type === 'cg' ? await getCoinGecko(sym.cg) : await getTwelveData(sym.td);
+    const tf = req.query.tf || '1h';
+    const data = sym.type === 'cg' ? await getCoinGecko(sym.cg, tf) : await getTwelveData(sym.td, tf);
     const analysis = await getAIAnalysis(asset, data);
     return res.status(200).json({ ok: true, asset, ...data, analysis });
   } catch (err) {
