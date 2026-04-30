@@ -812,25 +812,11 @@ async function launchAnalysis() {
       renderChart(labels,candles.map(c=>c.c));
     } else { fallbackChart(price); }
 
-    // ── Analyse IA sur vrais chiffres ──
-    btn.textContent='⟳ Analyse IA…';
-    const prompt=`Tu es un analyste financier expert. Voici les données RÉELLES et LIVE de ${asset.full} :
-Prix : ${price.toFixed(dec)} ${u} | Variation 24h : ${changePct.toFixed(2)}%
-RSI(14) : ${rsi.toFixed(1)} (${rsi>70?'suracheté':rsi<30?'survendu':'neutre'})
-MACD : ${macdStr} | Signal : ${macdSig.toFixed(3)}
-EMA20 : ${fmt(ema20,dec)} / EMA50 : ${fmt(ema50,dec)}
-Bollinger Upper : ${fmt(bbUpper,dec)} / Lower : ${fmt(bbLower,dec)} → ${bbPos} (${bbSig})
-Score : ${score}/100 → ${signal} (confiance ${confidence}%)
-Rédige 3-4 phrases d'analyse pro en français basées sur ces vrais chiffres. Mentionne niveaux clés et ce qu'un trader doit surveiller. Réponds UNIQUEMENT avec le texte.`;
-
-    const aiRes=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:prompt}]})
-    });
-    const aiData=await aiRes.json();
-    const analysis=aiData.content.map(c=>c.text||'').join('').trim();
+    // ── Analyse IA — fournie par le backend (pas de CORS) ──
     const atEl=document.getElementById('analysis-text');
-    atEl.textContent=analysis; atEl.classList.remove('analysis-placeholder');
+    atEl.textContent=d.analysis||'Analyse indisponible.';
+    atEl.classList.remove('analysis-placeholder');
+
 
     // ── Alertes ──
     if(score>=65) addAlert('buy','Signal ACHAT — '+asset.name,'Score '+score+'/100 · RSI '+rsi.toFixed(1));
