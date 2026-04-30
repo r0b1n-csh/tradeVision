@@ -65,10 +65,21 @@ async function getTwelveData(symbol) {
 
   const price     = parseFloat(quote.close || quote.price || 0);
   const changePct = parseFloat(quote.percent_change || 0);
-  const candles   = ts.values ? [...ts.values].reverse().map(v => ({ t: v.datetime, c: parseFloat(v.close) })) : [];
-  const prices    = candles.map(c => c.c);
 
-  // Try API indicators, fall back to local
+  // OHLCV candles for candlestick chart
+  const candles = ts.values
+    ? [...ts.values].reverse().map(v => ({
+        time:   Math.floor(new Date(v.datetime).getTime() / 1000),
+        open:   parseFloat(v.open),
+        high:   parseFloat(v.high),
+        low:    parseFloat(v.low),
+        close:  parseFloat(v.close),
+        volume: parseFloat(v.volume || 0),
+      }))
+    : [];
+
+  const closes = candles.map(c => c.close);
+
   let rsi, macd, macdSig, macdHist, ema20, ema50, bbUpper, bbMid, bbLower;
   try {
     const [rsiD, macdD, ema20D, ema50D, bbD] = await Promise.all([
@@ -78,43 +89,70 @@ async function getTwelveData(symbol) {
       fetchTD('/ema',    { symbol, interval: '1h', time_period: 50, outputsize: 1 }),
       fetchTD('/bbands', { symbol, interval: '1h', time_period: 20, outputsize: 1 }),
     ]);
-    rsi      = safe(rsiD.values  ? parseFloat(rsiD.values[0].rsi)             : null, calcRSI(prices));
-    macd     = safe(macdD.values ? parseFloat(macdD.values[0].macd)           : null, calcMACD(prices).macd);
-    macdSig  = safe(macdD.values ? parseFloat(macdD.values[0].signal)         : null, calcMACD(prices).signal);
-    macdHist = safe(macdD.values ? parseFloat(macdD.values[0].macd_histogram) : null, calcMACD(prices).hist);
-    ema20    = safe(ema20D.values? parseFloat(ema20D.values[0].ema)           : null, calcEMA(prices, 20));
-    ema50    = safe(ema50D.values? parseFloat(ema50D.values[0].ema)           : null, calcEMA(prices, 50));
-    const bb = calcBollinger(prices);
-    bbUpper  = safe(bbD.values   ? parseFloat(bbD.values[0].upper_band)       : null, bb.upper);
-    bbMid    = safe(bbD.values   ? parseFloat(bbD.values[0].middle_band)      : null, bb.mid);
-    bbLower  = safe(bbD.values   ? parseFloat(bbD.values[0].lower_band)       : null, bb.lower);
+    rsi      = safe(rsiD.values   ? parseFloat(rsiD.values[0].rsi)              : null, calcRSI(closes));
+    macd     = safe(macdD.values  ? parseFloat(macdD.values[0].macd)            : null, calcMACD(closes).macd);
+    macdSig  = safe(macdD.values  ? parseFloat(macdD.values[0].signal)          : null, calcMACD(closes).signal);
+    macdHist = safe(macdD.values  ? parseFloat(macdD.values[0].macd_histogram)  : null, calcMACD(closes).hist);
+    ema20    = safe(ema20D.values  ? parseFloat(ema20D.values[0].ema)           : null, calcEMA(closes, 20));
+    ema50    = safe(ema50D.values  ? parseFloat(ema50D.values[0].ema)           : null, calcEMA(closes, 50));
+    const bb = calcBollinger(closes);
+    bbUpper  = safe(bbD.values    ? parseFloat(bbD.values[0].upper_band)        : null, bb.upper);
+    bbMid    = safe(bbD.values    ? parseFloat(bbD.values[0].middle_band)       : null, bb.mid);
+    bbLower  = safe(bbD.values    ? parseFloat(bbD.values[0].lower_band)        : null, bb.lower);
   } catch {
-    rsi = calcRSI(prices);
-    const m = calcMACD(prices); macd = m.macd; macdSig = m.signal; macdHist = m.hist;
-    ema20 = calcEMA(prices, 20); ema50 = calcEMA(prices, 50);
-    const bb = calcBollinger(prices); bbUpper = bb.upper; bbMid = bb.mid; bbLower = bb.lower;
+    rsi = calcRSI(closes);
+    const m = calcMACD(closes); macd = m.macd; macdSig = m.signal; macdHist = m.hist;
+    ema20 = calcEMA(closes, 20); ema50 = calcEMA(closes, 50);
+    const bb = calcBollinger(closes); bbUpper = bb.upper; bbMid = bb.mid; bbLower = bb.lower;
   }
 
-  return { price, changePct, rsi, macd, macdSig, macdHist, ema20, ema50, bbUpper, bbMid, bbLower, candles, prices };
+  // EMA series for chart overlay
+  const ema20Series = buildEMASeries(candles, 20);
+  const ema50Series = buildEMASeries(candles, 50);
+
+  return { price, changePct, rsi, macd, macdSig, macdHist, ema20, ema50,
+           bbUpper, bbMid, bbLower, candles, closes, ema20Series, ema50Series };
 }
 
 async function getCoinGecko(cgId) {
   const [marketRes, chartRes] = await Promise.all([
     fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${cgId}`),
-    fetch(`https://api.coingecko.com/api/v3/coins/${cgId}/market_chart?vs_currency=usd&days=1&interval=hourly`),
+    fetch(`https://api.coingecko.com/api/v3/coins/${cgId}/ohlc?vs_currency=usd&days=1`),
   ]);
-  const [market, chart] = await Promise.all([marketRes.json(), chartRes.json()]);
+  const [market, ohlcRaw] = await Promise.all([marketRes.json(), chartRes.json()]);
+
   const coin      = market[0];
   const price     = coin.current_price;
   const changePct = coin.price_change_percentage_24h || 0;
-  const closes    = chart.prices.map(([, c]) => c);
-  const candles   = chart.prices.map(([t, c]) => ({ t: new Date(t).toISOString(), c }));
-  const rsi       = calcRSI(closes);
+
+  // CoinGecko OHLC: [timestamp, open, high, low, close]
+  const candles = ohlcRaw.map(([t, o, h, l, c]) => ({
+    time:   Math.floor(t / 1000),
+    open:   o, high: h, low: l, close: c, volume: 0,
+  }));
+  const closes = candles.map(c => c.close);
+
+  const rsi      = calcRSI(closes);
   const { macd, signal: macdSig, hist: macdHist } = calcMACD(closes);
-  const ema20     = calcEMA(closes, 20);
-  const ema50     = calcEMA(closes, 50);
+  const ema20    = calcEMA(closes, 20);
+  const ema50    = calcEMA(closes, 50);
   const { upper: bbUpper, mid: bbMid, lower: bbLower } = calcBollinger(closes);
-  return { price, changePct, rsi, macd, macdSig, macdHist, ema20, ema50, bbUpper, bbMid, bbLower, candles, prices: closes };
+  const ema20Series = buildEMASeries(candles, 20);
+  const ema50Series = buildEMASeries(candles, 50);
+
+  return { price, changePct, rsi, macd, macdSig, macdHist, ema20, ema50,
+           bbUpper, bbMid, bbLower, candles, closes, ema20Series, ema50Series };
+}
+
+function buildEMASeries(candles, period) {
+  const closes = candles.map(c => c.close);
+  const k = 2 / (period + 1);
+  let ema = closes.slice(0, Math.min(period, closes.length))
+                  .reduce((a, b) => a + b, 0) / Math.min(period, closes.length);
+  return candles.map((c, i) => {
+    if (i >= period) ema = c.close * k + ema * (1 - k);
+    return { time: c.time, value: parseFloat(ema.toFixed(4)) };
+  });
 }
 
 async function getAIAnalysis(assetKey, data) {
