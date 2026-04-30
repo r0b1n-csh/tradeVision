@@ -1,7 +1,7 @@
 const AI_MODEL = 'claude-sonnet-4-20250514';
 
 const SYMBOLS = {
-  XAUUSD: { name:'Or / Dollar (XAU/USD)',  unit:'$', dec:2, type:'yahoo', yhSym:'GC=F'   },
+  XAUUSD: { name:'Or / Dollar (XAU/USD)',  unit:'$', dec:2, type:'yahoo', yhSym:'XAUUSD=X'   },
   BTCUSD: { name:'Bitcoin (BTC/USD)',       unit:'$', dec:0, type:'crypto', cgId:'bitcoin' },
   SOLUSD: { name:'Solana (SOL/USD)',        unit:'$', dec:2, type:'crypto', cgId:'solana'  },
   CAC40:  { name:'CAC 40 (Paris)',          unit:'',  dec:0, type:'yahoo', yhSym:'^FCHI'  },
