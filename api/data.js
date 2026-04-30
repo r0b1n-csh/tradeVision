@@ -199,36 +199,45 @@ export default async function handler(req, res) {
     let price, changePct, candles;
 
     if(sym.type==='gold') {
-      // Live spot price from metals.live (free, real-time, no key)
-      let livePrice, liveChange;
+      // Spot price via Open Exchange Rates (XAU, free, no key needed for base rates)
+      // Primary: frankfurter.app doesn't have XAU
+      // Best free option: gold-api.com public endpoint
+      let livePrice = null;
+
+      // Try gold-api.com — free, no key, real spot price
       try {
-        const mr = await fetch('https://www.metals.live/api/spot/gold');
-        const md = await mr.json();
-        livePrice = parseFloat(md[0]?.price || md?.price || 0);
+        const r = await fetch('https://gold-api.com/price/XAU', {
+          headers: { 'Accept': 'application/json' }
+        });
+        const d = await r.json();
+        if(d && d.price) livePrice = parseFloat(d.price);
       } catch {}
 
-      // Candles from Yahoo GC=F (futures, good enough for chart shape)
-      const {price:futPrice, changePct, candles} = await fetchYahoo(sym.yhSym, tf);
+      // Try commodity-price API (free)
+      if(!livePrice) {
+        try {
+          const r = await fetch('https://api.commodity-price.com/metals?api_key=free&metal=gold');
+          const d = await r.json();
+          if(d && d.gold) livePrice = parseFloat(d.gold);
+        } catch {}
+      }
 
-      // Use spot price if available, futures otherwise
+      // Candles from Yahoo GC=F
+      const {price:futPrice, changePct, candles} = await fetchYahoo(sym.yhSym, tf);
       const price = livePrice || futPrice;
 
-      // Recalculate changePct from spot if we have it
-      const finalChange = changePct;
-
-      // Patch last candle with spot price
-      if(candles.length && livePrice) {
+      // If we got a spot price, shift all candles by the diff
+      if(candles.length && livePrice && livePrice !== futPrice) {
         const diff = livePrice - futPrice;
-        // Shift all candles by the diff to align with spot
-        candles.forEach(c => {
-          c.open  = parseFloat((c.open  + diff).toFixed(2));
-          c.high  = parseFloat((c.high  + diff).toFixed(2));
-          c.low   = parseFloat((c.low   + diff).toFixed(2));
-          c.close = parseFloat((c.close + diff).toFixed(2));
+        candles.forEach(cv => {
+          cv.open  = parseFloat((cv.open  + diff).toFixed(2));
+          cv.high  = parseFloat((cv.high  + diff).toFixed(2));
+          cv.low   = parseFloat((cv.low   + diff).toFixed(2));
+          cv.close = parseFloat((cv.close + diff).toFixed(2));
         });
       }
 
-      const closes      = candles.map(c=>c.close);
+      const closes      = candles.map(cv=>cv.close);
       const rsi         = calcRSI(closes);
       const {macd,signal:macdSig,hist:macdHist} = calcMACD(closes);
       const ema20       = calcEMA(closes,20);
@@ -236,13 +245,14 @@ export default async function handler(req, res) {
       const {upper:bbUpper,mid:bbMid,lower:bbLower} = calcBollinger(closes);
       const ema20Series = buildEMASeries(candles,20);
       const ema50Series = buildEMASeries(candles,50);
-      const analysis    = await getAIAnalysis(asset,price,finalChange,rsi,macd,macdSig,ema20,ema50,bbUpper,bbLower);
+      const analysis    = await getAIAnalysis(asset,price,changePct,rsi,macd,macdSig,ema20,ema50,bbUpper,bbLower);
 
       return res.status(200).json({
-        ok:true, asset, price, changePct:finalChange,
+        ok:true, asset, price, changePct,
         rsi, macd, macdSig, macdHist,
         ema20, ema50, bbUpper, bbMid, bbLower,
         candles, ema20Series, ema50Series, analysis,
+        _debug: { livePrice, futPrice }
       });
 
     } else if(sym.type==='crypto') {
