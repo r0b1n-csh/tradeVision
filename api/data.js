@@ -1,7 +1,7 @@
 const AI_MODEL = 'claude-sonnet-4-20250514';
 
 const SYMBOLS = {
-  XAUUSD: { name:'Or / Dollar (XAU/USD)',  unit:'$', dec:2, type:'yahoo', yhSym:'XAUUSD=X'   },
+  XAUUSD: { name:'Or / Dollar (XAU/USD)',  unit:'$', dec:2, type:'gold',  yhSym:'GC=F'        },
   BTCUSD: { name:'Bitcoin (BTC/USD)',       unit:'$', dec:0, type:'crypto', cgId:'bitcoin' },
   SOLUSD: { name:'Solana (SOL/USD)',        unit:'$', dec:2, type:'crypto', cgId:'solana'  },
   CAC40:  { name:'CAC 40 (Paris)',          unit:'',  dec:0, type:'yahoo', yhSym:'^FCHI'  },
@@ -198,27 +198,74 @@ export default async function handler(req, res) {
   try {
     let price, changePct, candles;
 
-    if(sym.type==='crypto') {
+    if(sym.type==='gold') {
+      // Live spot price from metals.live (free, real-time, no key)
+      let livePrice, liveChange;
+      try {
+        const mr = await fetch('https://www.metals.live/api/spot/gold');
+        const md = await mr.json();
+        livePrice = parseFloat(md[0]?.price || md?.price || 0);
+      } catch {}
+
+      // Candles from Yahoo GC=F (futures, good enough for chart shape)
+      const {price:futPrice, changePct, candles} = await fetchYahoo(sym.yhSym, tf);
+
+      // Use spot price if available, futures otherwise
+      const price = livePrice || futPrice;
+
+      // Recalculate changePct from spot if we have it
+      const finalChange = changePct;
+
+      // Patch last candle with spot price
+      if(candles.length && livePrice) {
+        const diff = livePrice - futPrice;
+        // Shift all candles by the diff to align with spot
+        candles.forEach(c => {
+          c.open  = parseFloat((c.open  + diff).toFixed(2));
+          c.high  = parseFloat((c.high  + diff).toFixed(2));
+          c.low   = parseFloat((c.low   + diff).toFixed(2));
+          c.close = parseFloat((c.close + diff).toFixed(2));
+        });
+      }
+
+      const closes      = candles.map(c=>c.close);
+      const rsi         = calcRSI(closes);
+      const {macd,signal:macdSig,hist:macdHist} = calcMACD(closes);
+      const ema20       = calcEMA(closes,20);
+      const ema50       = calcEMA(closes,50);
+      const {upper:bbUpper,mid:bbMid,lower:bbLower} = calcBollinger(closes);
+      const ema20Series = buildEMASeries(candles,20);
+      const ema50Series = buildEMASeries(candles,50);
+      const analysis    = await getAIAnalysis(asset,price,finalChange,rsi,macd,macdSig,ema20,ema50,bbUpper,bbLower);
+
+      return res.status(200).json({
+        ok:true, asset, price, changePct:finalChange,
+        rsi, macd, macdSig, macdHist,
+        ema20, ema50, bbUpper, bbMid, bbLower,
+        candles, ema20Series, ema50Series, analysis,
+      });
+
+    } else if(sym.type==='crypto') {
       ({price,changePct,candles}=await fetchCoinGecko(sym.cgId,tf));
     } else {
       ({price,changePct,candles}=await fetchYahoo(sym.yhSym,tf));
     }
 
     const closes      = candles.map(c=>c.close);
-    const rsi         = calcRSI(closes);
-    const {macd,signal:macdSig,hist:macdHist} = calcMACD(closes);
-    const ema20       = calcEMA(closes,20);
-    const ema50       = calcEMA(closes,50);
-    const {upper:bbUpper,mid:bbMid,lower:bbLower} = calcBollinger(closes);
-    const ema20Series = buildEMASeries(candles,20);
-    const ema50Series = buildEMASeries(candles,50);
-    const analysis    = await getAIAnalysis(asset,price,changePct,rsi,macd,macdSig,ema20,ema50,bbUpper,bbLower);
+    const rsi2        = calcRSI(closes);
+    const {macd:m2,signal:ms2,hist:mh2} = calcMACD(closes);
+    const ema20b      = calcEMA(closes,20);
+    const ema50b      = calcEMA(closes,50);
+    const {upper:bbU2,mid:bbM2,lower:bbL2} = calcBollinger(closes);
+    const e20s        = buildEMASeries(candles,20);
+    const e50s        = buildEMASeries(candles,50);
+    const analysis2   = await getAIAnalysis(asset,price,changePct,rsi2,m2,ms2,ema20b,ema50b,bbU2,bbL2);
 
     return res.status(200).json({
       ok:true, asset, price, changePct,
-      rsi, macd, macdSig, macdHist,
-      ema20, ema50, bbUpper, bbMid, bbLower,
-      candles, ema20Series, ema50Series, analysis,
+      rsi:rsi2, macd:m2, macdSig:ms2, macdHist:mh2,
+      ema20:ema20b, ema50:ema50b, bbUpper:bbU2, bbMid:bbM2, bbLower:bbL2,
+      candles, ema20Series:e20s, ema50Series:e50s, analysis:analysis2,
     });
   } catch(err) {
     console.error(err);
