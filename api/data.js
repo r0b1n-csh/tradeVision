@@ -1,4 +1,5 @@
 const AI_MODEL = 'claude-sonnet-4-20250514';
+const TD_KEY   = 'ee0ce47963f74929bfa2fcc54bed6e1a';
 
 const SYMBOLS = {
   XAUUSD: { name:'Or / Dollar (XAU/USD)',  unit:'$', dec:2, type:'gold',  yhSym:'GC=F'        },
@@ -199,35 +200,26 @@ export default async function handler(req, res) {
     let price, changePct, candles;
 
     if(sym.type==='gold') {
-      // Spot price via Open Exchange Rates (XAU, free, no key needed for base rates)
-      // Primary: frankfurter.app doesn't have XAU
-      // Best free option: gold-api.com public endpoint
+      // Twelve Data: gives real XAU/USD spot price (not futures)
       let livePrice = null;
-
-      // Try gold-api.com — free, no key, real spot price
+      let changePct = 0;
       try {
-        const r = await fetch('https://gold-api.com/price/XAU', {
-          headers: { 'Accept': 'application/json' }
-        });
-        const d = await r.json();
-        if(d && d.price) livePrice = parseFloat(d.price);
+        const tdUrl = `https://api.twelvedata.com/quote?symbol=XAU/USD&apikey=${TD_KEY}`;
+        const tdRes = await fetch(tdUrl);
+        const tdData = await tdRes.json();
+        if(tdData && tdData.close) {
+          livePrice = parseFloat(tdData.close);
+          changePct = parseFloat(tdData.percent_change || 0);
+        }
       } catch {}
 
-      // Try commodity-price API (free)
-      if(!livePrice) {
-        try {
-          const r = await fetch('https://api.commodity-price.com/metals?api_key=free&metal=gold');
-          const d = await r.json();
-          if(d && d.gold) livePrice = parseFloat(d.gold);
-        } catch {}
-      }
-
-      // Candles from Yahoo GC=F
-      const {price:futPrice, changePct, candles} = await fetchYahoo(sym.yhSym, tf);
+      // Candles from Yahoo GC=F for chart shape
+      const {price:futPrice, changePct:yhChange, candles} = await fetchYahoo(sym.yhSym, tf);
       const price = livePrice || futPrice;
+      if(!livePrice) changePct = yhChange;
 
-      // If we got a spot price, shift all candles by the diff
-      if(candles.length && livePrice && livePrice !== futPrice) {
+      // Shift candles from futures to spot price
+      if(candles.length && livePrice) {
         const diff = livePrice - futPrice;
         candles.forEach(cv => {
           cv.open  = parseFloat((cv.open  + diff).toFixed(2));
