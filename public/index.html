@@ -468,6 +468,56 @@ nav {
   .metrics-row { grid-template-columns: repeat(2, 1fr); }
   .ind-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* PATTERNS */
+.patterns-card { background:var(--bg2); border:0.5px solid var(--border); border-left:2px solid #ffb830; border-radius:12px; padding:18px 22px; margin-bottom:16px; }
+.pattern-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.pattern-item { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:7px; background:var(--bg3); border:0.5px solid var(--border); }
+.pattern-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.pattern-dot.bullish { background:#2dff9b; }
+.pattern-dot.bearish { background:#ff4d6a; }
+.pattern-dot.neutral { background:#ffb830; }
+.pattern-name { font-size:13px; font-weight:600; color:var(--text); }
+.pattern-desc { font-family:var(--font-mono); font-size:11px; color:var(--text3); margin-top:2px; }
+.pattern-strength { margin-left:auto; font-family:var(--font-mono); font-size:10px; }
+.pattern-strength.s3 { color:#2dff9b; }
+.pattern-strength.s2 { color:#ffb830; }
+.pattern-strength.s1 { color:var(--text3); }
+
+/* CONFLUENCE */
+.confluence-card { background:var(--bg2); border:0.5px solid var(--border); border-left:2px solid #7850ff; border-radius:12px; padding:18px 22px; margin-bottom:16px; }
+.confluence-signals { display:flex; flex-direction:column; gap:6px; margin-top:12px; }
+.conf-signal { display:flex; align-items:center; gap:10px; padding:7px 12px; border-radius:6px; background:var(--bg3); font-size:12px; }
+.conf-badge { font-family:var(--font-mono); font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; flex-shrink:0; min-width:52px; text-align:center; }
+.conf-badge.buy  { background:rgba(45,255,155,0.15); color:#2dff9b; }
+.conf-badge.sell { background:rgba(255,77,106,0.15);  color:#ff4d6a; }
+.conf-badge.neu  { background:rgba(120,80,255,0.15);  color:#a07fff; }
+.conf-ind  { color:var(--text); font-weight:500; min-width:80px; }
+.conf-det  { color:var(--text3); font-size:11px; flex:1; }
+.conf-summary { display:flex; gap:12px; margin-top:10px; }
+.conf-pill { flex:1; text-align:center; padding:8px; border-radius:7px; font-family:var(--font-mono); font-size:12px; }
+.conf-pill.buy  { background:rgba(45,255,155,0.1);  color:#2dff9b; border:0.5px solid rgba(45,255,155,0.3); }
+.conf-pill.sell { background:rgba(255,77,106,0.1);  color:#ff4d6a; border:0.5px solid rgba(255,77,106,0.3); }
+.conf-pill.neu  { background:rgba(120,80,255,0.1);  color:#a07fff; border:0.5px solid rgba(120,80,255,0.3); }
+
+/* FIBONACCI */
+.fib-card { background:var(--bg2); border:0.5px solid var(--border); border-left:2px solid #2dff9b; border-radius:12px; padding:18px 22px; margin-bottom:16px; }
+.fib-levels { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:12px; }
+.fib-level { text-align:center; padding:10px 6px; background:var(--bg3); border-radius:7px; border:0.5px solid var(--border); position:relative; overflow:hidden; }
+.fib-level.active { border-color:rgba(255,184,48,0.5); background:rgba(255,184,48,0.08); }
+.fib-pct  { font-family:var(--font-mono); font-size:10px; color:var(--text3); margin-bottom:4px; }
+.fib-price{ font-family:var(--font-mono); font-size:12px; color:var(--text); font-weight:500; }
+
+/* SR ZONES */
+.sr-card { background:var(--bg2); border:0.5px solid var(--border); border-left:2px solid #ff4d6a; border-radius:12px; padding:18px 22px; margin-bottom:16px; }
+.sr-list  { display:flex; flex-direction:column; gap:7px; margin-top:10px; }
+.sr-item  { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:6px; background:var(--bg3); }
+.sr-type  { font-family:var(--font-mono); font-size:10px; font-weight:600; padding:2px 8px; border-radius:4px; min-width:90px; text-align:center; }
+.sr-type.res { background:rgba(255,77,106,0.15); color:#ff4d6a; }
+.sr-type.sup { background:rgba(45,255,155,0.15); color:#2dff9b; }
+.sr-price { font-family:var(--font-mono); font-size:13px; color:var(--text); flex:1; }
+.sr-str   { font-size:11px; color:var(--text3); }
+.sr-touches{ font-family:var(--font-mono); font-size:10px; color:var(--text3); }
 </style>
 </head>
 <body>
@@ -603,6 +653,61 @@ nav {
     </div>
     <div class="news-list" id="news-list">
       <div class="no-alerts">Lance l'analyse pour voir les dernières news</div>
+    </div>
+  </div>
+
+  <!-- Patterns -->
+  <div class="section-label" style="margin-bottom:10px">Patterns détectés</div>
+  <div class="patterns-card">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="card-title">Reconnaissance de patterns</span>
+      <span class="ai-pill" id="pattern-count">—</span>
+    </div>
+    <div class="pattern-list" id="pattern-list">
+      <div class="no-alerts" style="padding:12px 0;font-size:12px">Lance l'analyse pour détecter les patterns</div>
+    </div>
+  </div>
+
+  <!-- Confluence -->
+  <div class="section-label" style="margin-bottom:10px">Confluence des indicateurs</div>
+  <div class="confluence-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <span class="card-title">Signaux combinés</span>
+      <span class="score-number" id="conf-score">—</span>
+    </div>
+    <div class="score-track" style="margin-bottom:6px"><div class="score-fill" id="conf-fill" style="width:50%;background:var(--text3)"></div></div>
+    <div class="conf-summary">
+      <div class="conf-pill buy" id="conf-buy">— ACHAT</div>
+      <div class="conf-pill neu" id="conf-neu">— NEUTRE</div>
+      <div class="conf-pill sell" id="conf-sell">— VENTE</div>
+    </div>
+    <div class="confluence-signals" id="conf-signals">
+      <div class="no-alerts" style="padding:12px 0;font-size:12px">Lance l'analyse pour voir la confluence</div>
+    </div>
+  </div>
+
+  <!-- Fibonacci -->
+  <div class="section-label" style="margin-bottom:10px">Niveaux de Fibonacci</div>
+  <div class="fib-card">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span class="card-title">Retracements automatiques</span>
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)" id="fib-range">—</span>
+    </div>
+    <div class="fib-levels" id="fib-levels">
+      <div class="fib-level"><div class="fib-pct">23.6%</div><div class="fib-price" id="fib236">—</div></div>
+      <div class="fib-level"><div class="fib-pct">38.2%</div><div class="fib-price" id="fib382">—</div></div>
+      <div class="fib-level"><div class="fib-pct">50.0%</div><div class="fib-price" id="fib500">—</div></div>
+      <div class="fib-level"><div class="fib-pct">61.8%</div><div class="fib-price" id="fib618">—</div></div>
+      <div class="fib-level"><div class="fib-pct">78.6%</div><div class="fib-price" id="fib786">—</div></div>
+    </div>
+  </div>
+
+  <!-- Support / Resistance -->
+  <div class="section-label" style="margin-bottom:10px">Supports &amp; Résistances dynamiques</div>
+  <div class="sr-card">
+    <div class="card-title" style="margin-bottom:4px">Zones pivots calculées sur l'historique</div>
+    <div class="sr-list" id="sr-list">
+      <div class="no-alerts" style="padding:12px 0;font-size:12px">Lance l'analyse pour voir les zones clés</div>
     </div>
   </div>
 
@@ -899,6 +1004,12 @@ async function launchAnalysis() {
     // ── Graphique candlesticks ──
     loadChart(candles, ema20Series, ema50Series);
 
+    // ── Modules de précision ──
+    renderPatterns(d.patterns);
+    renderConfluence(d.confluence);
+    renderFibonacci(d.fibonacci, price, dec);
+    renderSR(d.sr, dec);
+
     // ── Alertes ──
     if(score>=65) addAlert('buy','Signal ACHAT — '+asset.name,'Score '+score+'/100 · RSI '+Number(rsi).toFixed(1));
     else if(score<=35) addAlert('sell','Signal VENTE — '+asset.name,'Score '+score+'/100 · RSI '+Number(rsi).toFixed(1));
@@ -926,6 +1037,91 @@ async function launchAnalysis() {
 
   btn.disabled=false; btn.classList.remove('loading');
   btn.textContent='↗ Relancer l\'analyse IA';
+}
+
+
+// ── Render precision modules ──────────────────────────────────────────────
+
+function renderPatterns(patterns) {
+  const list = document.getElementById('pattern-list');
+  const count = document.getElementById('pattern-count');
+  if(!patterns || !patterns.length) {
+    count.textContent = '0 pattern';
+    list.innerHTML = '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:8px 0">Aucun pattern détecté sur cette bougie</div>';
+    return;
+  }
+  count.textContent = patterns.length + ' pattern' + (patterns.length>1?'s':'');
+  list.innerHTML = patterns.map(p => `
+    <div class="pattern-item">
+      <div class="pattern-dot ${p.type}"></div>
+      <div>
+        <div class="pattern-name">${p.name}</div>
+        <div class="pattern-desc">${p.desc}</div>
+      </div>
+      <div class="pattern-strength s${p.strength}">${'★'.repeat(p.strength)}${'☆'.repeat(3-p.strength)}</div>
+    </div>`).join('');
+}
+
+function renderConfluence(conf) {
+  if(!conf) return;
+  const {score,signal,confidence,signals,buyCount,sellCount,neutCount} = conf;
+  setEl('conf-score', score+'/100');
+  const fill=document.getElementById('conf-fill');
+  fill.style.width=score+'%';
+  fill.style.background=score>=65?'var(--green)':score<=35?'var(--red)':'#7850ff';
+  setEl('conf-buy',  buyCount+' ACHAT');
+  setEl('conf-sell', sellCount+' VENTE');
+  setEl('conf-neu',  neutCount+' NEUTRE');
+  const sigList = document.getElementById('conf-signals');
+  sigList.innerHTML = signals.map(s => {
+    const cls = s.verdict==='ACHAT'?'buy':s.verdict==='VENTE'?'sell':'neu';
+    const label = s.verdict==='ACHAT'?'▲ ACHAT':s.verdict==='VENTE'?'▼ VENTE':'— NEUTRE';
+    return `<div class="conf-signal">
+      <span class="conf-badge ${cls}">${label}</span>
+      <span class="conf-ind">${s.ind}</span>
+      <span class="conf-det">${s.detail}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderFibonacci(fib, price, dec) {
+  if(!fib) return;
+  const fmt = n => Number(n).toFixed(dec);
+  setEl('fib-range', `${fmt(fib.swingLow)} → ${fmt(fib.swingHigh)}`);
+  const levels = [
+    {id:'fib236', val:fib.fib236},
+    {id:'fib382', val:fib.fib382},
+    {id:'fib500', val:fib.fib500},
+    {id:'fib618', val:fib.fib618},
+    {id:'fib786', val:fib.fib786},
+  ];
+  levels.forEach(({id,val}) => {
+    setEl(id, fmt(val));
+    const el = document.getElementById(id).parentElement;
+    const dist = Math.abs(price - val) / price;
+    el.classList.toggle('active', dist < 0.005);
+  });
+}
+
+function renderSR(sr, dec) {
+  if(!sr) return;
+  const fmt = n => Number(n).toFixed(dec);
+  const list = document.getElementById('sr-list');
+  const all = [
+    ...sr.resistances.map(r=>({...r,label:'Résistance',cls:'res'})),
+    ...sr.supports.map(s=>({...s,label:'Support',cls:'sup'})),
+  ].sort((a,b)=>b.price-a.price);
+  if(!all.length) {
+    list.innerHTML='<div style="font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:8px 0">Pas assez de données pour calculer les zones</div>';
+    return;
+  }
+  list.innerHTML = all.map(z=>`
+    <div class="sr-item">
+      <span class="sr-type ${z.cls}">${z.label}</span>
+      <span class="sr-price">${fmt(z.price)}</span>
+      <span class="sr-str">${z.strength}</span>
+      <span class="sr-touches">${z.touches} touche${z.touches>1?'s':''}</span>
+    </div>`).join('');
 }
 
 // Init
