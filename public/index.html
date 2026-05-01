@@ -744,10 +744,13 @@ let lastFetchOk  = false;
 
 // Chart objects
 let lwChart        = null;
-let cSeries        = null; // candlestick
-let vSeries        = null; // volume
-let e20Series      = null; // EMA20 line
-let e50Series      = null; // EMA50 line
+let cSeries        = null;
+let vSeries        = null;
+let e20Series      = null;
+let e50Series      = null;
+let fibLines       = [];
+let srLines        = [];
+let patternMarkers = [];
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function fmt(n, dec) { return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
@@ -809,6 +812,7 @@ function initChart() {
   const container = document.getElementById('chartContainer');
   if(!container) return;
   if(lwChart) { lwChart.remove(); lwChart=null; cSeries=null; vSeries=null; e20Series=null; e50Series=null; }
+  fibLines=[]; srLines=[]; patternMarkers=[];
 
   lwChart = LightweightCharts.createChart(container, {
     width:  container.clientWidth || 600,
@@ -837,14 +841,86 @@ function initChart() {
   window.addEventListener('resize', ()=>{ if(lwChart) lwChart.applyOptions({width:container.clientWidth}); });
 }
 
-function loadChart(candles, ema20S, ema50S) {
+function clearOverlays() {
+  fibLines.forEach(l => { try { cSeries.removePriceLine(l); } catch {} });
+  srLines.forEach(l  => { try { cSeries.removePriceLine(l); } catch {} });
+  fibLines=[]; srLines=[]; patternMarkers=[];
+}
+
+function drawFibonacci(fib) {
+  if(!fib || !cSeries) return;
+  const levels = [
+    { price:fib.swingHigh, color:'rgba(160,127,255,0.6)', label:'Swing High',  dash:[] },
+    { price:fib.fib236,    color:'rgba(45,255,155,0.5)',  label:'Fib 23.6%',   dash:[4,4] },
+    { price:fib.fib382,    color:'rgba(255,184,48,0.6)',  label:'Fib 38.2%',   dash:[4,4] },
+    { price:fib.fib500,    color:'rgba(255,255,255,0.4)', label:'Fib 50.0%',   dash:[4,4] },
+    { price:fib.fib618,    color:'rgba(255,184,48,0.8)',  label:'Fib 61.8% ★', dash:[4,4] },
+    { price:fib.fib786,    color:'rgba(255,77,106,0.5)',  label:'Fib 78.6%',   dash:[4,4] },
+    { price:fib.swingLow,  color:'rgba(160,127,255,0.6)', label:'Swing Low',   dash:[] },
+  ];
+  levels.forEach(lv => {
+    if(!lv.price) return;
+    const line = cSeries.createPriceLine({
+      price:       lv.price,
+      color:       lv.color,
+      lineWidth:   1,
+      lineStyle:   lv.dash.length ? LightweightCharts.LineStyle.Dashed : LightweightCharts.LineStyle.Solid,
+      axisLabelVisible: true,
+      title:       lv.label,
+    });
+    fibLines.push(line);
+  });
+}
+
+function drawSupportResistance(sr) {
+  if(!sr || !cSeries) return;
+  sr.resistances.forEach(r => {
+    const line = cSeries.createPriceLine({
+      price:     r.price,
+      color:     r.strength==='Fort' ? 'rgba(255,77,106,0.9)' : r.strength==='Moyen' ? 'rgba(255,77,106,0.6)' : 'rgba(255,77,106,0.35)',
+      lineWidth: r.strength==='Fort' ? 2 : 1,
+      lineStyle: LightweightCharts.LineStyle.Solid,
+      axisLabelVisible: true,
+      title:     `R ${r.strength} (${r.touches}x)`,
+    });
+    srLines.push(line);
+  });
+  sr.supports.forEach(s => {
+    const line = cSeries.createPriceLine({
+      price:     s.price,
+      color:     s.strength==='Fort' ? 'rgba(45,255,155,0.9)' : s.strength==='Moyen' ? 'rgba(45,255,155,0.6)' : 'rgba(45,255,155,0.35)',
+      lineWidth: s.strength==='Fort' ? 2 : 1,
+      lineStyle: LightweightCharts.LineStyle.Solid,
+      axisLabelVisible: true,
+      title:     `S ${s.strength} (${s.touches}x)`,
+    });
+    srLines.push(line);
+  });
+}
+
+function drawPatternMarkers(patterns, candles) {
+  if(!patterns || !patterns.length || !cSeries || !candles || !candles.length) return;
+  const sorted = [...candles].sort((a,b)=>a.time-b.time);
+  const lastCandle = sorted[sorted.length-1];
+  const markers = patterns.map(p => ({
+    time:     lastCandle.time,
+    position: p.type==='bullish' ? 'belowBar' : p.type==='bearish' ? 'aboveBar' : 'inBar',
+    color:    p.type==='bullish' ? '#2dff9b'  : p.type==='bearish' ? '#ff4d6a'  : '#ffb830',
+    shape:    p.type==='bullish' ? 'arrowUp'  : p.type==='bearish' ? 'arrowDown': 'circle',
+    text:     p.name,
+    size:     p.strength,
+  }));
+  cSeries.setMarkers(markers);
+}
+
+function loadChart(candles, ema20S, ema50S, fibonacci, sr, patterns) {
   if(!lwChart) initChart();
   if(!candles || !candles.length) { fallbackChart(2350); return; }
 
+  clearOverlays();
   const sorted = [...candles].sort((a,b)=>a.time-b.time);
 
   cSeries.setData(sorted.map(c=>({ time:c.time, open:c.open, high:c.high, low:c.low, close:c.close })));
-
   vSeries.setData(sorted.map(c=>({
     time:c.time, value:c.volume||0,
     color: c.close>=c.open ? 'rgba(45,255,155,0.25)' : 'rgba(255,77,106,0.25)',
@@ -852,6 +928,11 @@ function loadChart(candles, ema20S, ema50S) {
 
   if(ema20S && ema20S.length) e20Series.setData([...ema20S].sort((a,b)=>a.time-b.time));
   if(ema50S && ema50S.length) e50Series.setData([...ema50S].sort((a,b)=>a.time-b.time));
+
+  // Draw overlays
+  drawFibonacci(fibonacci);
+  drawSupportResistance(sr);
+  drawPatternMarkers(patterns, sorted);
 
   lwChart.timeScale().fitContent();
 }
@@ -872,7 +953,7 @@ function fallbackChart(price) {
     ema20S.push({time:t, value:parseFloat(ema.toFixed(4))});
     ema50S.push({time:t, value:parseFloat((ema*0.998).toFixed(4))});
   }
-  loadChart(candles, ema20S, ema50S);
+  loadChart(candles, ema20S, ema50S, null, null, null);
 }
 
 // ── Sentiment ─────────────────────────────────────────────────────────────
@@ -1002,7 +1083,7 @@ async function launchAnalysis() {
     atEl.classList.remove('analysis-placeholder');
 
     // ── Graphique candlesticks ──
-    loadChart(candles, ema20Series, ema50Series);
+    loadChart(candles, ema20Series, ema50Series, d.fibonacci, d.sr, d.patterns);
 
     // ── Modules de précision ──
     renderPatterns(d.patterns);
