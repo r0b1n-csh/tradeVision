@@ -847,68 +847,86 @@ function clearOverlays() {
   fibLines=[]; srLines=[]; patternMarkers=[];
 }
 
-function drawFibonacci(fib) {
-  if(!fib || !cSeries) return;
+function drawFibonacci(fib, currentPrice) {
+  if(!fib || !cSeries || !currentPrice) return;
+
+  // Seul le niveau Fib le plus proche du prix actuel
   const levels = [
-    { price:fib.swingHigh, color:'rgba(160,127,255,0.6)', label:'Swing High',  dash:[] },
-    { price:fib.fib236,    color:'rgba(45,255,155,0.5)',  label:'Fib 23.6%',   dash:[4,4] },
-    { price:fib.fib382,    color:'rgba(255,184,48,0.6)',  label:'Fib 38.2%',   dash:[4,4] },
-    { price:fib.fib500,    color:'rgba(255,255,255,0.4)', label:'Fib 50.0%',   dash:[4,4] },
-    { price:fib.fib618,    color:'rgba(255,184,48,0.8)',  label:'Fib 61.8% ★', dash:[4,4] },
-    { price:fib.fib786,    color:'rgba(255,77,106,0.5)',  label:'Fib 78.6%',   dash:[4,4] },
-    { price:fib.swingLow,  color:'rgba(160,127,255,0.6)', label:'Swing Low',   dash:[] },
-  ];
-  levels.forEach(lv => {
-    if(!lv.price) return;
-    const line = cSeries.createPriceLine({
-      price:       lv.price,
-      color:       lv.color,
-      lineWidth:   1,
-      lineStyle:   lv.dash.length ? LightweightCharts.LineStyle.Dashed : LightweightCharts.LineStyle.Solid,
-      axisLabelVisible: true,
-      title:       lv.label,
-    });
-    fibLines.push(line);
+    { price:fib.fib236, label:'Fib 23.6%' },
+    { price:fib.fib382, label:'Fib 38.2%' },
+    { price:fib.fib500, label:'Fib 50.0%' },
+    { price:fib.fib618, label:'Fib 61.8%' },
+    { price:fib.fib786, label:'Fib 78.6%' },
+  ].filter(l => l.price);
+
+  // Trouver le niveau le plus proche
+  const closest = levels.reduce((best, l) =>
+    Math.abs(l.price - currentPrice) < Math.abs(best.price - currentPrice) ? l : best
+  );
+
+  const line = cSeries.createPriceLine({
+    price:            closest.price,
+    color:            'rgba(255,184,48,0.85)',
+    lineWidth:        1,
+    lineStyle:        LightweightCharts.LineStyle.Dashed,
+    axisLabelVisible: true,
+    title:            closest.label,
   });
+  fibLines.push(line);
 }
 
-function drawSupportResistance(sr) {
-  if(!sr || !cSeries) return;
-  sr.resistances.forEach(r => {
-    const line = cSeries.createPriceLine({
-      price:     r.price,
-      color:     r.strength==='Fort' ? 'rgba(255,77,106,0.9)' : r.strength==='Moyen' ? 'rgba(255,77,106,0.6)' : 'rgba(255,77,106,0.35)',
-      lineWidth: r.strength==='Fort' ? 2 : 1,
-      lineStyle: LightweightCharts.LineStyle.Solid,
+function drawSupportResistance(sr, currentPrice) {
+  if(!sr || !cSeries || !currentPrice) return;
+
+  // 1 résistance la plus proche au-dessus
+  const res = sr.resistances
+    .filter(r => r.price > currentPrice)
+    .sort((a,b) => a.price - b.price)[0];
+
+  // 1 support le plus proche en-dessous
+  const sup = sr.supports
+    .filter(s => s.price < currentPrice)
+    .sort((a,b) => b.price - a.price)[0];
+
+  if(res) {
+    srLines.push(cSeries.createPriceLine({
+      price:            res.price,
+      color:            'rgba(255,77,106,0.85)',
+      lineWidth:        res.strength==='Fort' ? 2 : 1,
+      lineStyle:        LightweightCharts.LineStyle.Solid,
       axisLabelVisible: true,
-      title:     `R ${r.strength} (${r.touches}x)`,
-    });
-    srLines.push(line);
-  });
-  sr.supports.forEach(s => {
-    const line = cSeries.createPriceLine({
-      price:     s.price,
-      color:     s.strength==='Fort' ? 'rgba(45,255,155,0.9)' : s.strength==='Moyen' ? 'rgba(45,255,155,0.6)' : 'rgba(45,255,155,0.35)',
-      lineWidth: s.strength==='Fort' ? 2 : 1,
-      lineStyle: LightweightCharts.LineStyle.Solid,
+      title:            `🔴 Résistance`,
+    }));
+  }
+
+  if(sup) {
+    srLines.push(cSeries.createPriceLine({
+      price:            sup.price,
+      color:            'rgba(45,255,155,0.85)',
+      lineWidth:        sup.strength==='Fort' ? 2 : 1,
+      lineStyle:        LightweightCharts.LineStyle.Solid,
       axisLabelVisible: true,
-      title:     `S ${s.strength} (${s.touches}x)`,
-    });
-    srLines.push(line);
-  });
+      title:            `🟢 Support`,
+    }));
+  }
 }
 
 function drawPatternMarkers(patterns, candles) {
   if(!patterns || !patterns.length || !cSeries || !candles || !candles.length) return;
   const sorted = [...candles].sort((a,b)=>a.time-b.time);
   const lastCandle = sorted[sorted.length-1];
-  const markers = patterns.map(p => ({
+
+  // Seulement les patterns forts (strength >= 2)
+  const strong = patterns.filter(p => p.strength >= 2);
+  if(!strong.length) return;
+
+  const markers = strong.map(p => ({
     time:     lastCandle.time,
-    position: p.type==='bullish' ? 'belowBar' : p.type==='bearish' ? 'aboveBar' : 'inBar',
-    color:    p.type==='bullish' ? '#2dff9b'  : p.type==='bearish' ? '#ff4d6a'  : '#ffb830',
-    shape:    p.type==='bullish' ? 'arrowUp'  : p.type==='bearish' ? 'arrowDown': 'circle',
+    position: p.type==='bullish' ? 'belowBar' : 'aboveBar',
+    color:    p.type==='bullish' ? '#2dff9b'  : '#ff4d6a',
+    shape:    p.type==='bullish' ? 'arrowUp'  : 'arrowDown',
     text:     p.name,
-    size:     p.strength,
+    size:     2,
   }));
   cSeries.setMarkers(markers);
 }
@@ -929,9 +947,10 @@ function loadChart(candles, ema20S, ema50S, fibonacci, sr, patterns) {
   if(ema20S && ema20S.length) e20Series.setData([...ema20S].sort((a,b)=>a.time-b.time));
   if(ema50S && ema50S.length) e50Series.setData([...ema50S].sort((a,b)=>a.time-b.time));
 
-  // Draw overlays
-  drawFibonacci(fibonacci);
-  drawSupportResistance(sr);
+  // Draw overlays — uniquement les niveaux les plus pertinents
+  const currentPrice = sorted[sorted.length-1]?.close;
+  drawFibonacci(fibonacci, currentPrice);
+  drawSupportResistance(sr, currentPrice);
   drawPatternMarkers(patterns, sorted);
 
   lwChart.timeScale().fitContent();
