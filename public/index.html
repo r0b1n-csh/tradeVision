@@ -751,6 +751,7 @@ let e50Series      = null;
 let fibLines       = [];
 let srLines        = [];
 let patternMarkers = [];
+let zoneSeries     = []; // colored area zones
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function fmt(n, dec) { return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
@@ -844,7 +845,8 @@ function initChart() {
 function clearOverlays() {
   fibLines.forEach(l => { try { cSeries.removePriceLine(l); } catch {} });
   srLines.forEach(l  => { try { cSeries.removePriceLine(l); } catch {} });
-  fibLines=[]; srLines=[]; patternMarkers=[];
+  zoneSeries.forEach(s => { try { lwChart.removeSeries(s); } catch {} });
+  fibLines=[]; srLines=[]; patternMarkers=[]; zoneSeries=[];
 }
 
 function drawFibonacci(fib, currentPrice) {
@@ -931,6 +933,62 @@ function drawPatternMarkers(patterns, candles) {
   cSeries.setMarkers(markers);
 }
 
+function drawZones(sr, fibonacci, currentPrice, candles) {
+  if(!lwChart || !currentPrice || !candles || !candles.length) return;
+  const sorted = [...candles].sort((a,b)=>a.time-b.time);
+
+  // ATR pour calculer l'épaisseur des zones
+  const atr = sorted.slice(-14).reduce((sum,cv,i,arr)=>{
+    if(i===0) return sum;
+    return sum+Math.max(cv.high-cv.low,Math.abs(cv.high-arr[i-1].close),Math.abs(cv.low-arr[i-1].close));
+  },0)/Math.min(13,sorted.length-1)||currentPrice*0.005;
+  const spread = atr * 0.6;
+
+  function makeZoneBand(midPrice, topColor, botColor, labelTop, labelBot) {
+    srLines.push(cSeries.createPriceLine({
+      price: midPrice+spread, color:topColor, lineWidth:2,
+      lineStyle:LightweightCharts.LineStyle.Solid,
+      axisLabelVisible:true, title:labelTop,
+    }));
+    srLines.push(cSeries.createPriceLine({
+      price: midPrice-spread, color:botColor, lineWidth:2,
+      lineStyle:LightweightCharts.LineStyle.Solid,
+      axisLabelVisible:true, title:labelBot,
+    }));
+  }
+
+  // 🟢 Zone d'achat — autour du support le plus proche
+  const sup = sr?.supports?.filter(s=>s.price<currentPrice).sort((a,b)=>b.price-a.price)[0];
+  if(sup) makeZoneBand(sup.price,'rgba(45,255,155,0.9)','rgba(45,255,155,0.5)','','🟢 Zone d'achat');
+
+  // 🔴 Zone de vente — autour de la résistance la plus proche
+  const res = sr?.resistances?.filter(r=>r.price>currentPrice).sort((a,b)=>a.price-b.price)[0];
+  if(res) makeZoneBand(res.price,'rgba(255,77,106,0.5)','rgba(255,77,106,0.9)','🔴 Zone de vente','');
+
+  // ⭐ Zone de confluence Fib + S/R
+  if(fibonacci && sr) {
+    const fibLevels=[fibonacci.fib382,fibonacci.fib500,fibonacci.fib618].filter(Boolean);
+    const allSR=[...(sr.supports||[]),...(sr.resistances||[])];
+    fibLevels.forEach(fibP=>{
+      allSR.forEach(zone=>{
+        if(Math.abs(fibP-zone.price)/currentPrice<0.004){
+          makeZoneBand(fibP,'rgba(255,184,48,0.9)','rgba(255,184,48,0.5)','⭐ Confluence','');
+        }
+      });
+    });
+  }
+
+  // 🟣 Zone neutre — fourchette prix actuel (ATR)
+  srLines.push(cSeries.createPriceLine({
+    price:currentPrice+atr*0.4, color:'rgba(120,80,255,0.5)', lineWidth:1,
+    lineStyle:LightweightCharts.LineStyle.Dotted, axisLabelVisible:false, title:'',
+  }));
+  srLines.push(cSeries.createPriceLine({
+    price:currentPrice-atr*0.4, color:'rgba(120,80,255,0.5)', lineWidth:1,
+    lineStyle:LightweightCharts.LineStyle.Dotted, axisLabelVisible:true, title:'🟣 Prix actuel',
+  }));
+}
+
 function loadChart(candles, ema20S, ema50S, fibonacci, sr, patterns) {
   if(!lwChart) initChart();
   if(!candles || !candles.length) { fallbackChart(2350); return; }
@@ -949,6 +1007,7 @@ function loadChart(candles, ema20S, ema50S, fibonacci, sr, patterns) {
 
   // Draw overlays — uniquement les niveaux les plus pertinents
   const currentPrice = sorted[sorted.length-1]?.close;
+  drawZones(sr, fibonacci, currentPrice, sorted);
   drawFibonacci(fibonacci, currentPrice);
   drawSupportResistance(sr, currentPrice);
   drawPatternMarkers(patterns, sorted);
