@@ -623,169 +623,42 @@ nav {
   <!-- Analysis -->
   <div class="analysis-card">
     <div class="analysis-header">
-      <span class="ai-pill">IA ANALYSTE</span>
-      <span class="analysis-asset" id="analysis-asset-name">XAU/USD</span>
-    </div>
-    <div class="analysis-text analysis-placeholder" id="analysis-text">
-      Sélectionne un actif et lance l'analyse pour obtenir une synthèse en temps réel.
-    </div>
-  </div>
-  </div>
-
-  <!-- Sentiment -->
-  <div class="section-label" style="margin-bottom:10px">Sentiment de marché — News en temps réel</div>
-  <div class="sentiment-card" id="sentiment-card">
-    <div class="sentiment-top">
-      <div class="sentiment-gauge-wrap">
-        <div class="sentiment-label-row">
-          <span class="score-label">Score sentiment</span>
-          <span class="score-number" id="sent-score">—</span>
-        </div>
-        <div class="score-track">
-          <div class="score-fill" id="sent-fill" style="width:50%;background:var(--text3)"></div>
-        </div>
-        <div class="score-ends"><span>Très Baissier</span><span>Neutre</span><span>Très Haussier</span></div>
-      </div>
-      <div class="sentiment-badge-wrap">
-        <div class="sentiment-badge" id="sent-badge">—</div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text3);margin-top:6px;text-align:center" id="sent-counts">Lance l'analyse</div>
-      </div>
-    </div>
-    <div class="news-list" id="news-list">
-      <div class="no-alerts">Lance l'analyse pour voir les dernières news</div>
-    </div>
-  </div>
-
-  <!-- Patterns -->
-  <div class="section-label" style="margin-bottom:10px">Patterns détectés</div>
-  <div class="patterns-card">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <span class="card-title">Reconnaissance de patterns</span>
-      <span class="ai-pill" id="pattern-count">—</span>
-    </div>
-    <div class="pattern-list" id="pattern-list">
-      <div class="no-alerts" style="padding:12px 0;font-size:12px">Lance l'analyse pour détecter les patterns</div>
-    </div>
-  </div>
-
-  <!-- Confluence -->
-  <div class="section-label" style="margin-bottom:10px">Confluence des indicateurs</div>
-  <div class="confluence-card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-      <span class="card-title">Signaux combinés</span>
-      <span class="score-number" id="conf-score">—</span>
-    </div>
-    <div class="score-track" style="margin-bottom:6px"><div class="score-fill" id="conf-fill" style="width:50%;background:var(--text3)"></div></div>
-    <div class="conf-summary">
-      <div class="conf-pill buy" id="conf-buy">— ACHAT</div>
-      <div class="conf-pill neu" id="conf-neu">— NEUTRE</div>
-      <div class="conf-pill sell" id="conf-sell">— VENTE</div>
-    </div>
-    <div class="confluence-signals" id="conf-signals">
-      <div class="no-alerts" style="padding:12px 0;font-size:12px">Lance l'analyse pour voir la confluence</div>
-    </div>
-  </div>
-
-  <!-- Fibonacci -->
-  <div class="section-label" style="margin-bottom:10px">Niveaux de Fibonacci</div>
-  <div class="fib-card">
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <span class="card-title">Retracements automatiques</span>
-      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)" id="fib-range">—</span>
-    </div>
-    <div class="fib-levels" id="fib-levels">
-      <div class="fib-level"><div class="fib-pct">23.6%</div><div class="fib-price" id="fib236">—</div></div>
-      <div class="fib-level"><div class="fib-pct">38.2%</div><div class="fib-price" id="fib382">—</div></div>
-      <div class="fib-level"><div class="fib-pct">50.0%</div><div class="fib-price" id="fib500">—</div></div>
-      <div class="fib-level"><div class="fib-pct">61.8%</div><div class="fib-price" id="fib618">—</div></div>
-      <div class="fib-level"><div class="fib-pct">78.6%</div><div class="fib-price" id="fib786">—</div></div>
-    </div>
-  </div>
-
-  <!-- Support / Resistance -->
-  <div class="section-label" style="margin-bottom:10px">Supports &amp; Résistances dynamiques</div>
-  <div class="sr-card">
-    <div class="card-title" style="margin-bottom:4px">Zones pivots calculées sur l'historique</div>
-    <div class="sr-list" id="sr-list">
-      <div class="no-alerts" style="padding:12px 0;font-size:12px">Lance l'analyse pour voir les zones clés</div>
-    </div>
-  </div>
-
-  <!-- Alerts -->
-  <div class="alerts-card">
-    <div class="card-header" style="margin-bottom:14px">
-      <div class="card-title">Alertes de signal</div>
-      <button onclick="clearAlerts()" style="font-family:var(--font-mono);font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;letter-spacing:0.5px">EFFACER</button>
-    </div>
-    <div class="alerts-list" id="alerts-list">
-      <div class="no-alerts" id="no-alerts">Aucune alerte — lance une analyse pour commencer</div>
-    </div>
-  </div>
-
-  <!-- Launch -->
-  <button class="btn-launch" id="btn-launch" onclick="launchAnalysis()">
-    ↗ Lancer l'analyse IA
-  </button>
-
-</div>
 <script>
 const ASSETS = {
-  XAUUSD: { name:'XAU/USD', full:'Or / Dollar (XAU/USD)', unit:'$', dec:2 },
-  BTCUSD: { name:'BTC/USD', full:'Bitcoin (BTC/USD)',      unit:'$', dec:0 },
-  SOLUSD: { name:'SOL/USD', full:'Solana (SOL/USD)',       unit:'$', dec:2 },
-  CAC40:  { name:'CAC 40',  full:'CAC 40 (Paris)',         unit:'',  dec:0 },
-  SP500:  { name:'S&P 500', full:'S&P 500 (USA)',          unit:'',  dec:0 },
+  XAUUSD:{name:'XAU/USD',full:'Or / Dollar (XAU/USD)',unit:'$',dec:2},
+  BTCUSD:{name:'BTC/USD',full:'Bitcoin (BTC/USD)',unit:'$',dec:0},
+  SOLUSD:{name:'SOL/USD',full:'Solana (SOL/USD)',unit:'$',dec:2},
+  CAC40: {name:'CAC 40', full:'CAC 40 (Paris)',  unit:'', dec:0},
+  SP500:  {name:'S&P 500',full:'S&P 500 (USA)',  unit:'', dec:0},
 };
 
-let currentAsset = 'XAUUSD';
-let currentTf    = '1h';
-let alerts       = [];
-let lastFetchOk  = false;
+let currentAsset='XAUUSD', currentTf='1h', alerts=[], lastFetchOk=false;
 
 // Chart objects
-let lwChart        = null;
-let cSeries        = null;
-let vSeries        = null;
-let e20Series      = null;
-let e50Series      = null;
-let fibLines       = [];
-let srLines        = [];
-let patternMarkers = [];
-let zoneSeries     = []; // colored area zones
+let lwChart=null, cSeries=null, vSeries=null, e20Series=null, e50Series=null, overlayLines=[];
 
-// ── Helpers ──────────────────────────────────────────────────────────────
-function fmt(n, dec) { return Number(n).toLocaleString('fr-FR', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
-function setEl(id, text) { const e=document.getElementById(id); if(e) e.textContent=text; }
-function setSig(id, val, up, down) {
-  const el=document.getElementById(id); if(!el) return;
-  el.textContent=val;
-  el.className='ind-sig '+(val===up?'up':val===down?'down':'neu');
-}
+// ── Helpers ───────────────────────────────────────────────────────────────
+function fmt(n,dec){return Number(n).toLocaleString('fr-FR',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+function setEl(id,text){const e=document.getElementById(id);if(e)e.textContent=text;}
+function setSig(id,val,up,down){const el=document.getElementById(id);if(!el)return;el.textContent=val;el.className='ind-sig '+(val===up?'up':val===down?'down':'neu');}
 
-function selectAsset(btn) {
+function selectAsset(btn){
   document.querySelectorAll('.asset-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  currentAsset=btn.dataset.asset;
-  setEl('analysis-asset-name', ASSETS[currentAsset].name);
+  btn.classList.add('active'); currentAsset=btn.dataset.asset;
+  setEl('analysis-asset-name',ASSETS[currentAsset].name);
   setEl('chart-title','Graphique de prix — '+ASSETS[currentAsset].name);
   resetUI();
 }
-
-function setTf(btn, tf) {
+function setTf(btn,tf){
   document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  currentTf=tf;
+  btn.classList.add('active'); currentTf=tf;
   if(lastFetchOk) launchAnalysis();
 }
-
-function resetUI() {
-  ['m-price','m-change','m-rsi','m-trend','i-macd','i-ema','i-boll','i-vol','i-sup','i-res','score-num']
-    .forEach(id=>setEl(id,'—'));
+function resetUI(){
+  ['m-price','m-change','m-rsi','m-trend','i-macd','i-ema','i-boll','i-vol','i-sup','i-res','score-num'].forEach(id=>setEl(id,'—'));
   ['i-macd-s','i-ema-s','i-boll-s','i-vol-s'].forEach(id=>setSig(id,'—','',''));
-  setEl('sig-name','En attente');
-  document.getElementById('sig-name').className='signal-name neu';
-  document.getElementById('sig-icon').textContent='—';
-  document.getElementById('sig-icon').style.color='var(--text3)';
+  setEl('sig-name','En attente'); document.getElementById('sig-name').className='signal-name neu';
+  document.getElementById('sig-icon').textContent='—'; document.getElementById('sig-icon').style.color='var(--text3)';
   setEl('sig-conf',"Lance l'analyse pour obtenir un signal");
   document.getElementById('score-fill').style.cssText='width:50%;background:var(--text3)';
   setEl('analysis-text',"Sélectionne un actif et lance l'analyse.");
@@ -793,383 +666,296 @@ function resetUI() {
   lastFetchOk=false;
 }
 
-// ── Alerts ───────────────────────────────────────────────────────────────
-function addAlert(type, title, desc) {
+// ── Alerts ────────────────────────────────────────────────────────────────
+function addAlert(type,title,desc){
   alerts.unshift({type,title,desc,time:new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})});
-  document.getElementById('alerts-list').innerHTML = alerts.slice(0,8).map(a=>`
+  document.getElementById('alerts-list').innerHTML=alerts.slice(0,8).map(a=>`
     <div class="alert-item ${a.type}">
       <div class="alert-dot"></div>
       <div class="alert-body"><div class="alert-title">${a.title}</div><div class="alert-desc">${a.desc}</div></div>
       <div class="alert-time">${a.time}</div>
     </div>`).join('');
 }
-function clearAlerts() {
-  alerts=[];
-  document.getElementById('alerts-list').innerHTML='<div class="no-alerts">Aucune alerte</div>';
-}
+function clearAlerts(){alerts=[];document.getElementById('alerts-list').innerHTML='<div class="no-alerts">Aucune alerte</div>';}
 
-// ── Chart (Lightweight Charts TradingView) ────────────────────────────────
-function initChart() {
-  const container = document.getElementById('chartContainer');
+// ── Chart ─────────────────────────────────────────────────────────────────
+function initChart(){
+  const container=document.getElementById('chartContainer');
   if(!container) return;
-  if(lwChart) { lwChart.remove(); lwChart=null; cSeries=null; vSeries=null; e20Series=null; e50Series=null; }
-  fibLines=[]; srLines=[]; patternMarkers=[];
-
-  lwChart = LightweightCharts.createChart(container, {
-    width:  container.clientWidth || 600,
-    height: 320,
-    layout: { background:{color:'#100d1a'}, textColor:'#9b91c0' },
-    grid:   { vertLines:{color:'rgba(120,80,255,0.06)'}, horzLines:{color:'rgba(120,80,255,0.06)'} },
-    crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
-    rightPriceScale: { borderColor:'rgba(120,80,255,0.2)' },
-    timeScale: { borderColor:'rgba(120,80,255,0.2)', timeVisible:true, secondsVisible:false },
+  if(lwChart){lwChart.remove();lwChart=null;cSeries=null;vSeries=null;e20Series=null;e50Series=null;overlayLines=[];}
+  lwChart=LightweightCharts.createChart(container,{
+    width:container.clientWidth||600, height:320,
+    layout:{background:{color:'#100d1a'},textColor:'#9b91c0'},
+    grid:{vertLines:{color:'rgba(120,80,255,0.06)'},horzLines:{color:'rgba(120,80,255,0.06)'}},
+    crosshair:{mode:LightweightCharts.CrosshairMode.Normal},
+    rightPriceScale:{borderColor:'rgba(120,80,255,0.2)'},
+    timeScale:{borderColor:'rgba(120,80,255,0.2)',timeVisible:true,secondsVisible:false},
   });
-
-  cSeries = lwChart.addCandlestickSeries({
-    upColor:'#2dff9b', downColor:'#ff4d6a',
-    borderUpColor:'#2dff9b', borderDownColor:'#ff4d6a',
-    wickUpColor:'#2dff9b', wickDownColor:'#ff4d6a',
+  cSeries=lwChart.addCandlestickSeries({
+    upColor:'#2dff9b',downColor:'#ff4d6a',
+    borderUpColor:'#2dff9b',borderDownColor:'#ff4d6a',
+    wickUpColor:'#2dff9b',wickDownColor:'#ff4d6a',
   });
-
-  vSeries = lwChart.addHistogramSeries({
-    priceFormat:{type:'volume'}, priceScaleId:'vol',
-    scaleMargins:{top:0.85, bottom:0},
-  });
-
-  e20Series = lwChart.addLineSeries({ color:'#7850ff', lineWidth:1.5, priceLineVisible:false, lastValueVisible:true, title:'EMA20' });
-  e50Series = lwChart.addLineSeries({ color:'#ffb830', lineWidth:1.5, priceLineVisible:false, lastValueVisible:true, title:'EMA50' });
-
-  window.addEventListener('resize', ()=>{ if(lwChart) lwChart.applyOptions({width:container.clientWidth}); });
+  vSeries=lwChart.addHistogramSeries({priceFormat:{type:'volume'},priceScaleId:'vol',scaleMargins:{top:0.85,bottom:0}});
+  e20Series=lwChart.addLineSeries({color:'#7850ff',lineWidth:1.5,priceLineVisible:false,lastValueVisible:true,title:'EMA20'});
+  e50Series=lwChart.addLineSeries({color:'#ffb830',lineWidth:1.5,priceLineVisible:false,lastValueVisible:true,title:'EMA50'});
+  window.addEventListener('resize',()=>{if(lwChart)lwChart.applyOptions({width:container.clientWidth});});
 }
 
-function clearOverlays() {
-  fibLines.forEach(l => { try { cSeries.removePriceLine(l); } catch {} });
-  srLines.forEach(l  => { try { cSeries.removePriceLine(l); } catch {} });
-  zoneSeries.forEach(s => { try { lwChart.removeSeries(s); } catch {} });
-  fibLines=[]; srLines=[]; patternMarkers=[]; zoneSeries=[];
+function clearOverlays(){
+  overlayLines.forEach(l=>{try{cSeries.removePriceLine(l);}catch{}});
+  overlayLines=[];
+  try{cSeries.setMarkers([]);}catch{}
 }
 
-function drawFibonacci(fib, currentPrice) {
-  if(!fib || !cSeries || !currentPrice) return;
+function drawOverlays(fibonacci, sr, patterns, price){
+  if(!cSeries||!price) return;
+  clearOverlays();
 
-  // Seul le niveau Fib le plus proche du prix actuel
-  const levels = [
-    { price:fib.fib236, label:'Fib 23.6%' },
-    { price:fib.fib382, label:'Fib 38.2%' },
-    { price:fib.fib500, label:'Fib 50.0%' },
-    { price:fib.fib618, label:'Fib 61.8%' },
-    { price:fib.fib786, label:'Fib 78.6%' },
-  ].filter(l => l.price);
+  // ── Zones d'intérêt ──
 
-  // Trouver le niveau le plus proche
-  const closest = levels.reduce((best, l) =>
-    Math.abs(l.price - currentPrice) < Math.abs(best.price - currentPrice) ? l : best
-  );
-
-  const line = cSeries.createPriceLine({
-    price:            closest.price,
-    color:            'rgba(255,184,48,0.85)',
-    lineWidth:        1,
-    lineStyle:        LightweightCharts.LineStyle.Dashed,
-    axisLabelVisible: true,
-    title:            closest.label,
-  });
-  fibLines.push(line);
-}
-
-function drawSupportResistance(sr, currentPrice) {
-  if(!sr || !cSeries || !currentPrice) return;
-
-  // 1 résistance la plus proche au-dessus
-  const res = sr.resistances
-    .filter(r => r.price > currentPrice)
-    .sort((a,b) => a.price - b.price)[0];
-
-  // 1 support le plus proche en-dessous
-  const sup = sr.supports
-    .filter(s => s.price < currentPrice)
-    .sort((a,b) => b.price - a.price)[0];
-
-  if(res) {
-    srLines.push(cSeries.createPriceLine({
-      price:            res.price,
-      color:            'rgba(255,77,106,0.85)',
-      lineWidth:        res.strength==='Fort' ? 2 : 1,
-      lineStyle:        LightweightCharts.LineStyle.Solid,
-      axisLabelVisible: true,
-      title:            `🔴 Résistance`,
-    }));
+  // 🟢 Zone d'achat — support le plus proche sous le prix
+  const sup=sr?.supports?.filter(s=>s.price<price).sort((a,b)=>b.price-a.price)[0];
+  if(sup){
+    overlayLines.push(cSeries.createPriceLine({price:sup.price,color:'rgba(45,255,155,0.9)',lineWidth:2,lineStyle:LightweightCharts.LineStyle.Solid,axisLabelVisible:true,title:'🟢 Zone d\'achat'}));
   }
 
-  if(sup) {
-    srLines.push(cSeries.createPriceLine({
-      price:            sup.price,
-      color:            'rgba(45,255,155,0.85)',
-      lineWidth:        sup.strength==='Fort' ? 2 : 1,
-      lineStyle:        LightweightCharts.LineStyle.Solid,
-      axisLabelVisible: true,
-      title:            `🟢 Support`,
-    }));
-  }
-}
-
-function drawPatternMarkers(patterns, candles) {
-  if(!patterns || !patterns.length || !cSeries || !candles || !candles.length) return;
-  const sorted = [...candles].sort((a,b)=>a.time-b.time);
-  const lastCandle = sorted[sorted.length-1];
-
-  // Seulement les patterns forts (strength >= 2)
-  const strong = patterns.filter(p => p.strength >= 2);
-  if(!strong.length) return;
-
-  const markers = strong.map(p => ({
-    time:     lastCandle.time,
-    position: p.type==='bullish' ? 'belowBar' : 'aboveBar',
-    color:    p.type==='bullish' ? '#2dff9b'  : '#ff4d6a',
-    shape:    p.type==='bullish' ? 'arrowUp'  : 'arrowDown',
-    text:     p.name,
-    size:     2,
-  }));
-  cSeries.setMarkers(markers);
-}
-
-function drawZones(sr, fibonacci, currentPrice, candles) {
-  if(!lwChart || !currentPrice || !candles || !candles.length) return;
-  const sorted = [...candles].sort((a,b)=>a.time-b.time);
-
-  // ATR pour calculer l'épaisseur des zones
-  const atr = sorted.slice(-14).reduce((sum,cv,i,arr)=>{
-    if(i===0) return sum;
-    return sum+Math.max(cv.high-cv.low,Math.abs(cv.high-arr[i-1].close),Math.abs(cv.low-arr[i-1].close));
-  },0)/Math.min(13,sorted.length-1)||currentPrice*0.005;
-  const spread = atr * 0.6;
-
-  function makeZoneBand(midPrice, topColor, botColor, labelTop, labelBot) {
-    srLines.push(cSeries.createPriceLine({
-      price: midPrice+spread, color:topColor, lineWidth:2,
-      lineStyle:LightweightCharts.LineStyle.Solid,
-      axisLabelVisible:true, title:labelTop,
-    }));
-    srLines.push(cSeries.createPriceLine({
-      price: midPrice-spread, color:botColor, lineWidth:2,
-      lineStyle:LightweightCharts.LineStyle.Solid,
-      axisLabelVisible:true, title:labelBot,
-    }));
+  // 🔴 Zone de vente — résistance la plus proche au-dessus
+  const res=sr?.resistances?.filter(r=>r.price>price).sort((a,b)=>a.price-b.price)[0];
+  if(res){
+    overlayLines.push(cSeries.createPriceLine({price:res.price,color:'rgba(255,77,106,0.9)',lineWidth:2,lineStyle:LightweightCharts.LineStyle.Solid,axisLabelVisible:true,title:'🔴 Zone de vente'}));
   }
 
-  // 🟢 Zone d'achat — autour du support le plus proche
-  const sup = sr?.supports?.filter(s=>s.price<currentPrice).sort((a,b)=>b.price-a.price)[0];
-  if(sup) makeZoneBand(sup.price,'rgba(45,255,155,0.9)','rgba(45,255,155,0.5)','','🟢 Zone d'achat');
-
-  // 🔴 Zone de vente — autour de la résistance la plus proche
-  const res = sr?.resistances?.filter(r=>r.price>currentPrice).sort((a,b)=>a.price-b.price)[0];
-  if(res) makeZoneBand(res.price,'rgba(255,77,106,0.5)','rgba(255,77,106,0.9)','🔴 Zone de vente','');
-
-  // ⭐ Zone de confluence Fib + S/R
-  if(fibonacci && sr) {
+  // ⭐ Zone de confluence — Fib + S/R au même niveau
+  if(fibonacci&&sr){
     const fibLevels=[fibonacci.fib382,fibonacci.fib500,fibonacci.fib618].filter(Boolean);
     const allSR=[...(sr.supports||[]),...(sr.resistances||[])];
+    let confluenceDrawn=false;
     fibLevels.forEach(fibP=>{
-      allSR.forEach(zone=>{
-        if(Math.abs(fibP-zone.price)/currentPrice<0.004){
-          makeZoneBand(fibP,'rgba(255,184,48,0.9)','rgba(255,184,48,0.5)','⭐ Confluence','');
+      if(confluenceDrawn) return;
+      allSR.forEach(z=>{
+        if(confluenceDrawn) return;
+        if(Math.abs(fibP-z.price)/price<0.004){
+          overlayLines.push(cSeries.createPriceLine({price:fibP,color:'rgba(255,184,48,0.95)',lineWidth:2,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:'⭐ Confluence Fib+S/R'}));
+          confluenceDrawn=true;
         }
       });
     });
   }
 
-  // 🟣 Zone neutre — fourchette prix actuel (ATR)
-  srLines.push(cSeries.createPriceLine({
-    price:currentPrice+atr*0.4, color:'rgba(120,80,255,0.5)', lineWidth:1,
-    lineStyle:LightweightCharts.LineStyle.Dotted, axisLabelVisible:false, title:'',
-  }));
-  srLines.push(cSeries.createPriceLine({
-    price:currentPrice-atr*0.4, color:'rgba(120,80,255,0.5)', lineWidth:1,
-    lineStyle:LightweightCharts.LineStyle.Dotted, axisLabelVisible:true, title:'🟣 Prix actuel',
-  }));
+  // 📊 Niveau Fibonacci le plus proche
+  if(fibonacci){
+    const levels=[{p:fibonacci.fib236,l:'Fib 23.6%'},{p:fibonacci.fib382,l:'Fib 38.2%'},{p:fibonacci.fib500,l:'Fib 50%'},{p:fibonacci.fib618,l:'Fib 61.8%'},{p:fibonacci.fib786,l:'Fib 78.6%'}].filter(l=>l.p);
+    const closest=levels.reduce((b,l)=>Math.abs(l.p-price)<Math.abs(b.p-price)?l:b);
+    overlayLines.push(cSeries.createPriceLine({price:closest.p,color:'rgba(255,184,48,0.6)',lineWidth:1,lineStyle:LightweightCharts.LineStyle.Dashed,axisLabelVisible:true,title:closest.l}));
+  }
+
+  // 🕯️ Marqueurs de patterns forts sur dernière bougie
+  if(patterns&&patterns.length){
+    const strong=patterns.filter(p=>p.strength>=2);
+    if(strong.length){
+      cSeries.setMarkers(strong.map(p=>({
+        time: cSeries.dataByIndex ? undefined : undefined,
+        position:p.type==='bullish'?'belowBar':'aboveBar',
+        color:p.type==='bullish'?'#2dff9b':'#ff4d6a',
+        shape:p.type==='bullish'?'arrowUp':'arrowDown',
+        text:p.name, size:2,
+      })));
+    }
+  }
 }
 
-function loadChart(candles, ema20S, ema50S, fibonacci, sr, patterns) {
+function loadChart(candles,ema20S,ema50S,fibonacci,sr,patterns){
   if(!lwChart) initChart();
-  if(!candles || !candles.length) { fallbackChart(2350); return; }
+  if(!candles||!candles.length){fallbackChart(2350);return;}
+  const sorted=[...candles].sort((a,b)=>a.time-b.time);
+  cSeries.setData(sorted.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
+  vSeries.setData(sorted.map(c=>({time:c.time,value:c.volume||0,color:c.close>=c.open?'rgba(45,255,155,0.25)':'rgba(255,77,106,0.25)'})));
+  if(ema20S&&ema20S.length) e20Series.setData([...ema20S].sort((a,b)=>a.time-b.time));
+  if(ema50S&&ema50S.length) e50Series.setData([...ema50S].sort((a,b)=>a.time-b.time));
+  const price=sorted[sorted.length-1].close;
 
-  clearOverlays();
-  const sorted = [...candles].sort((a,b)=>a.time-b.time);
+  // Pattern markers need time from last candle
+  if(patterns&&patterns.length){
+    const strong=patterns.filter(p=>p.strength>=2);
+    if(strong.length){
+      try{cSeries.setMarkers(strong.map(p=>({
+        time:sorted[sorted.length-1].time,
+        position:p.type==='bullish'?'belowBar':'aboveBar',
+        color:p.type==='bullish'?'#2dff9b':'#ff4d6a',
+        shape:p.type==='bullish'?'arrowUp':'arrowDown',
+        text:p.name,size:2,
+      })));}catch(e){console.warn('Markers:',e);}
+    }
+  }
 
-  cSeries.setData(sorted.map(c=>({ time:c.time, open:c.open, high:c.high, low:c.low, close:c.close })));
-  vSeries.setData(sorted.map(c=>({
-    time:c.time, value:c.volume||0,
-    color: c.close>=c.open ? 'rgba(45,255,155,0.25)' : 'rgba(255,77,106,0.25)',
-  })));
-
-  if(ema20S && ema20S.length) e20Series.setData([...ema20S].sort((a,b)=>a.time-b.time));
-  if(ema50S && ema50S.length) e50Series.setData([...ema50S].sort((a,b)=>a.time-b.time));
-
-  // Draw overlays — uniquement les niveaux les plus pertinents
-  const currentPrice = sorted[sorted.length-1]?.close;
-  drawZones(sr, fibonacci, currentPrice, sorted);
-  drawFibonacci(fibonacci, currentPrice);
-  drawSupportResistance(sr, currentPrice);
-  drawPatternMarkers(patterns, sorted);
-
+  drawOverlays(fibonacci,sr,null,price);
   lwChart.timeScale().fitContent();
 }
 
-function fallbackChart(price) {
+function fallbackChart(price){
   if(!lwChart) initChart();
-  const now = Math.floor(Date.now()/1000);
-  const candles=[], ema20S=[], ema50S=[];
-  let v=price*0.993, ema=v;
-  for(let i=119;i>=0;i--) {
-    const o=v;
-    v += (Math.random()-0.47)*price*0.002;
-    const h=Math.max(o,v)*(1+Math.random()*0.001);
-    const l=Math.min(o,v)*(1-Math.random()*0.001);
-    const t=now-i*3600;
-    candles.push({time:t, open:parseFloat(o.toFixed(4)), high:parseFloat(h.toFixed(4)), low:parseFloat(l.toFixed(4)), close:parseFloat(v.toFixed(4)), volume:0});
-    ema = v*0.1 + ema*0.9;
-    ema20S.push({time:t, value:parseFloat(ema.toFixed(4))});
-    ema50S.push({time:t, value:parseFloat((ema*0.998).toFixed(4))});
+  const now=Math.floor(Date.now()/1000);
+  const candles=[]; let v=price*0.993,ema=v;
+  for(let i=119;i>=0;i--){
+    const o=v; v+=(Math.random()-0.47)*price*0.002;
+    const h=Math.max(o,v)*(1+Math.random()*0.001), l=Math.min(o,v)*(1-Math.random()*0.001);
+    candles.push({time:now-i*3600,open:parseFloat(o.toFixed(4)),high:parseFloat(h.toFixed(4)),low:parseFloat(l.toFixed(4)),close:parseFloat(v.toFixed(4)),volume:0});
   }
-  loadChart(candles, ema20S, ema50S, null, null, null);
+  cSeries.setData(candles.map(c=>({time:c.time,open:c.open,high:c.high,low:c.low,close:c.close})));
+  vSeries.setData(candles.map(c=>({time:c.time,value:0,color:'rgba(120,80,255,0.2)'})));
+  lwChart.timeScale().fitContent();
+}
+
+// ── Precision modules render ───────────────────────────────────────────────
+function renderPatterns(patterns){
+  const list=document.getElementById('pattern-list');
+  const count=document.getElementById('pattern-count');
+  if(!patterns||!patterns.length){
+    if(count) count.textContent='0 pattern';
+    if(list) list.innerHTML='<div style="font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:8px 0">Aucun pattern détecté</div>';
+    return;
+  }
+  if(count) count.textContent=patterns.length+' pattern'+(patterns.length>1?'s':'');
+  if(list) list.innerHTML=patterns.map(p=>`
+    <div class="pattern-item">
+      <div class="pattern-dot ${p.type}"></div>
+      <div><div class="pattern-name">${p.name}</div><div class="pattern-desc">${p.desc}</div></div>
+      <div class="pattern-strength s${p.strength}">${'★'.repeat(p.strength)}${'☆'.repeat(3-p.strength)}</div>
+    </div>`).join('');
+}
+
+function renderConfluence(conf){
+  if(!conf) return;
+  const {score,signal,confidence,signals,buyCount,sellCount,neutCount}=conf;
+  setEl('conf-score',score+'/100');
+  const fill=document.getElementById('conf-fill');
+  if(fill){fill.style.width=score+'%';fill.style.background=score>=65?'var(--green)':score<=35?'var(--red)':'#7850ff';}
+  setEl('conf-buy',buyCount+' ACHAT'); setEl('conf-sell',sellCount+' VENTE'); setEl('conf-neu',neutCount+' NEUTRE');
+  const sl=document.getElementById('conf-signals');
+  if(sl) sl.innerHTML=signals.map(s=>{
+    const cls=s.verdict==='ACHAT'?'buy':s.verdict==='VENTE'?'sell':'neu';
+    const label=s.verdict==='ACHAT'?'▲ ACHAT':s.verdict==='VENTE'?'▼ VENTE':'— NEUTRE';
+    return `<div class="conf-signal"><span class="conf-badge ${cls}">${label}</span><span class="conf-ind">${s.ind}</span><span class="conf-det">${s.detail}</span></div>`;
+  }).join('');
+}
+
+function renderFibonacci(fib,price,dec){
+  if(!fib) return;
+  const f=n=>Number(n).toFixed(dec);
+  setEl('fib-range',`${f(fib.swingLow)} → ${f(fib.swingHigh)}`);
+  [{id:'fib236',val:fib.fib236},{id:'fib382',val:fib.fib382},{id:'fib500',val:fib.fib500},{id:'fib618',val:fib.fib618},{id:'fib786',val:fib.fib786}].forEach(({id,val})=>{
+    setEl(id,f(val));
+    const el=document.getElementById(id);
+    if(el){const par=el.parentElement;if(par)par.classList.toggle('active',Math.abs(price-val)/price<0.005);}
+  });
+}
+
+function renderSR(sr,dec){
+  if(!sr) return;
+  const f=n=>Number(n).toFixed(dec);
+  const list=document.getElementById('sr-list');
+  if(!list) return;
+  const all=[...sr.resistances.map(r=>({...r,label:'Résistance',cls:'res'})),...sr.supports.map(s=>({...s,label:'Support',cls:'sup'}))].sort((a,b)=>b.price-a.price);
+  if(!all.length){list.innerHTML='<div style="font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:8px 0">Pas assez de données</div>';return;}
+  list.innerHTML=all.map(z=>`<div class="sr-item"><span class="sr-type ${z.cls}">${z.label}</span><span class="sr-price">${f(z.price)}</span><span class="sr-str">${z.strength}</span><span class="sr-touches">${z.touches} touche${z.touches>1?'s':''}</span></div>`).join('');
 }
 
 // ── Sentiment ─────────────────────────────────────────────────────────────
-async function loadSentiment(asset) {
-  try {
+async function loadSentiment(asset){
+  try{
     const res=await fetch(`/api/news?asset=${asset}`);
     if(!res.ok) throw new Error(`News ${res.status}`);
-    const d=await res.json();
-    if(!d.ok) throw new Error(d.error);
-    const score=d.sentimentScore;
-    const label=d.sentimentLabel;
+    const d=await res.json(); if(!d.ok) throw new Error(d.error);
+    const score=d.sentimentScore,label=d.sentimentLabel;
     const fill=document.getElementById('sent-fill');
-    fill.style.width=score+'%';
-    fill.style.background=score>=60?'var(--green)':score<=40?'var(--red)':'var(--amber)';
+    if(fill){fill.style.width=score+'%';fill.style.background=score>=60?'var(--green)':score<=40?'var(--red)':'var(--amber)';}
     setEl('sent-score',score+'/100');
     const badge=document.getElementById('sent-badge');
-    badge.textContent=label;
-    badge.className='sentiment-badge '+(label==='Haussier'?'up':label==='Baissier'?'down':'neu');
+    if(badge){badge.textContent=label;badge.className='sentiment-badge '+(label==='Haussier'?'up':label==='Baissier'?'down':'neu');}
     setEl('sent-counts',`↑ ${d.totalPos} positifs · ↓ ${d.totalNeg} négatifs`);
-    const newsList=document.getElementById('news-list');
-    if(!d.articles||!d.articles.length){ newsList.innerHTML='<div class="no-alerts">Aucune news trouvée</div>'; return; }
-    newsList.innerHTML=d.articles.slice(0,6).map(a=>{
+    const nl=document.getElementById('news-list');
+    if(!nl) return;
+    if(!d.articles||!d.articles.length){nl.innerHTML='<div class="no-alerts">Aucune news trouvée</div>';return;}
+    nl.innerHTML=d.articles.slice(0,6).map(a=>{
       const cls=a.sentiment==='positive'?'pos':a.sentiment==='negative'?'neg':'neu';
       const time=a.publishedAt?new Date(a.publishedAt).toLocaleString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-      return `<a class="news-item" href="${a.url}" target="_blank" rel="noopener">
-        <div class="news-dot ${cls}"></div>
-        <div class="news-body"><div class="news-title">${a.title||'Sans titre'}</div><div class="news-meta">${a.source}·${time}</div></div>
-      </a>`;
+      return `<a class="news-item" href="${a.url}" target="_blank" rel="noopener"><div class="news-dot ${cls}"></div><div class="news-body"><div class="news-title">${a.title||'Sans titre'}</div><div class="news-meta">${a.source}·${time}</div></div></a>`;
     }).join('');
-    const assetName=ASSETS[asset].name;
-    if(score>=65) addAlert('buy','Sentiment HAUSSIER — '+assetName,'Score news : '+score+'/100');
-    else if(score<=35) addAlert('sell','Sentiment BAISSIER — '+assetName,'Score news : '+score+'/100');
-  } catch(e) {
-    console.error('News error:',e);
-    document.getElementById('news-list').innerHTML='<div class="no-alerts">News indisponibles</div>';
-  }
+    if(score>=65) addAlert('buy','Sentiment HAUSSIER — '+ASSETS[asset].name,'Score news : '+score+'/100');
+    else if(score<=35) addAlert('sell','Sentiment BAISSIER — '+ASSETS[asset].name,'Score news : '+score+'/100');
+  }catch(e){console.error('News:',e);const nl=document.getElementById('news-list');if(nl)nl.innerHTML='<div class="no-alerts">News indisponibles</div>';}
 }
 
-// ── Main Analysis ─────────────────────────────────────────────────────────
-async function launchAnalysis() {
+// ── Main Analysis ──────────────────────────────────────────────────────────
+async function launchAnalysis(){
   const btn=document.getElementById('btn-launch');
   const dot=document.getElementById('status-dot');
-  btn.disabled=true; btn.classList.add('loading');
-  dot.className='status-dot'; setEl('status-text','Connexion…');
+  btn.disabled=true; btn.classList.add('loading'); dot.className='status-dot'; setEl('status-text','Connexion…');
+  const asset=ASSETS[currentAsset]; const u=asset.unit; const dec=asset.dec;
 
-  const asset=ASSETS[currentAsset];
-  const u=asset.unit; const dec=asset.dec;
-
-  try {
+  try{
     btn.textContent='⟳ Données live…';
     const res=await fetch(`/api/data?asset=${currentAsset}&tf=${currentTf}`);
     if(!res.ok) throw new Error(`Erreur serveur ${res.status}`);
     const d=await res.json();
     if(!d.ok) throw new Error(d.error||'Données indisponibles');
+    const{price,changePct,rsi,macd,macdSig,macdHist,ema20,ema50,bbUpper,bbMid,bbLower,candles,analysis,ema20Series,ema50Series,patterns,confluence,fibonacci,sr}=d;
 
-    const {price, changePct, rsi, macd, macdSig, macdHist,
-           ema20, ema50, bbUpper, bbMid, bbLower, candles, analysis, ema20Series, ema50Series} = d;
-
-    // ── Métriques ──
+    // Métriques
     setEl('m-price',(u||'')+fmt(price,dec));
     const chEl=document.getElementById('m-change');
     chEl.textContent=(changePct>=0?'+':'')+Number(changePct).toFixed(2)+'%';
     chEl.className='metric-val '+(changePct>0?'up':changePct<0?'down':'neu');
     setEl('m-change-sub',changePct>0?'En hausse':'En baisse');
-
     const rsiEl=document.getElementById('m-rsi');
     rsiEl.textContent=Number(rsi).toFixed(1);
     rsiEl.className='metric-val '+(rsi>70?'down':rsi<30?'up':'neu');
     setEl('m-rsi-sub',rsi>70?'Suracheté':rsi<30?'Survendu':'Neutre');
-
     const trend=price>ema50?'Haussier':price<ema50?'Baissier':'Latéral';
     const tEl=document.getElementById('m-trend');
     tEl.textContent=trend; tEl.className='metric-val '+(trend==='Haussier'?'up':trend==='Baissier'?'down':'neu');
     setEl('m-trend-sub','vs EMA 50');
 
-    // ── Indicateurs ──
+    // Indicateurs
     const macdStr=(macd>=0?'+':'')+Number(macd).toFixed(dec>0?3:2);
-    setEl('i-macd',macdStr);
-    setSig('i-macd-s',macd>macdSig?'Haussier':'Baissier','Haussier','Baissier');
-    setEl('i-ema',ema20>ema50?'EMA20 > EMA50':'EMA20 < EMA50');
-    setSig('i-ema-s',ema20>ema50?'Haussier':'Baissier','Haussier','Baissier');
-
+    setEl('i-macd',macdStr); setSig('i-macd-s',macd>macdSig?'Haussier':'Baissier','Haussier','Baissier');
+    setEl('i-ema',ema20>ema50?'EMA20 > EMA50':'EMA20 < EMA50'); setSig('i-ema-s',ema20>ema50?'Haussier':'Baissier','Haussier','Baissier');
     let bbPos,bbSig;
     if(price>=bbUpper*0.999){bbPos='Bande haute';bbSig='Surachat';}
     else if(price<=bbLower*1.001){bbPos='Bande basse';bbSig='Survente';}
     else{bbPos='Centre';bbSig='Neutre';}
     setEl('i-boll',bbPos); setSig('i-boll-s',bbSig,'Survente','Surachat');
     setEl('i-vol','Voir graphique'); setEl('i-vol-s','—');
-    setEl('i-sup',(u||'')+fmt(bbLower,dec));
-    setEl('i-res',(u||'')+fmt(bbUpper,dec));
+    setEl('i-sup',(u||'')+fmt(bbLower,dec)); setEl('i-res',(u||'')+fmt(bbUpper,dec));
 
-    // ── Score ──
-    let score=50;
-    if(rsi<30)score+=20; else if(rsi>70)score-=20;
-    else if(rsi<45)score+=8; else if(rsi>55)score-=8;
-    if(macd>macdSig)score+=15; else score-=15;
-    if(ema20>ema50)score+=12; else score-=12;
-    if(price>bbMid)score+=5; else score-=5;
-    if(bbSig==='Survente')score+=8; else if(bbSig==='Surachat')score-=8;
-    if(changePct>0)score+=5; else score-=5;
-    score=Math.max(0,Math.min(100,Math.round(score)));
-
+    // Score (depuis confluence)
+    const score=confluence?.score||50;
+    const signal=confluence?.signal||'NEUTRE';
+    const confidence=confluence?.confidence||50;
     setEl('score-num',score+'/100');
     const fill=document.getElementById('score-fill');
-    fill.style.width=score+'%';
-    fill.style.background=score>=65?'var(--green)':score<=35?'var(--red)':'#7850ff';
-
-    const signal=score>=75?'ACHAT FORT':score>=60?'ACHAT':score<=25?'VENTE FORTE':score<=40?'VENTE':'NEUTRE';
-    const confidence=Math.round(50+Math.abs(score-50)*0.8);
-    const sigMap={
-      'ACHAT FORT':{color:'var(--green)',icon:'▲▲',cls:'up'},
-      'ACHAT':{color:'var(--green)',icon:'▲',cls:'up'},
-      'NEUTRE':{color:'var(--text3)',icon:'—',cls:'neu'},
-      'VENTE':{color:'var(--red)',icon:'▼',cls:'down'},
-      'VENTE FORTE':{color:'var(--red)',icon:'▼▼',cls:'down'},
-    };
-    const sm=sigMap[signal];
-    document.getElementById('sig-icon').textContent=sm.icon;
-    document.getElementById('sig-icon').style.color=sm.color;
-    const snEl=document.getElementById('sig-name');
-    snEl.textContent=signal; snEl.className='signal-name '+sm.cls;
+    fill.style.width=score+'%'; fill.style.background=score>=65?'var(--green)':score<=35?'var(--red)':'#7850ff';
+    const sigMap={'ACHAT FORT':{color:'var(--green)',icon:'▲▲',cls:'up'},'ACHAT':{color:'var(--green)',icon:'▲',cls:'up'},'NEUTRE':{color:'var(--text3)',icon:'—',cls:'neu'},'VENTE':{color:'var(--red)',icon:'▼',cls:'down'},'VENTE FORTE':{color:'var(--red)',icon:'▼▼',cls:'down'}};
+    const sm=sigMap[signal]||sigMap['NEUTRE'];
+    document.getElementById('sig-icon').textContent=sm.icon; document.getElementById('sig-icon').style.color=sm.color;
+    const snEl=document.getElementById('sig-name'); snEl.textContent=signal; snEl.className='signal-name '+sm.cls;
     setEl('sig-conf','Confiance : '+confidence+'%');
 
-    // ── Analyse IA ──
+    // Analyse IA
     const atEl=document.getElementById('analysis-text');
-    atEl.textContent=analysis||'Analyse indisponible.';
-    atEl.classList.remove('analysis-placeholder');
+    atEl.textContent=analysis||'Analyse indisponible.'; atEl.classList.remove('analysis-placeholder');
 
-    // ── Graphique candlesticks ──
-    loadChart(candles, ema20Series, ema50Series, d.fibonacci, d.sr, d.patterns);
+    // Graphique + overlays
+    loadChart(candles,ema20Series,ema50Series,fibonacci,sr,patterns);
 
-    // ── Modules de précision ──
-    renderPatterns(d.patterns);
-    renderConfluence(d.confluence);
-    renderFibonacci(d.fibonacci, price, dec);
-    renderSR(d.sr, dec);
+    // Modules de précision
+    renderPatterns(patterns);
+    renderConfluence(confluence);
+    renderFibonacci(fibonacci,price,dec);
+    renderSR(sr,dec);
 
-    // ── Alertes ──
+    // Alertes
     if(score>=65) addAlert('buy','Signal ACHAT — '+asset.name,'Score '+score+'/100 · RSI '+Number(rsi).toFixed(1));
     else if(score<=35) addAlert('sell','Signal VENTE — '+asset.name,'Score '+score+'/100 · RSI '+Number(rsi).toFixed(1));
     else addAlert('info','Analyse terminée — '+asset.name,'Signal neutre · Score '+score+'/100');
@@ -1181,106 +967,17 @@ async function launchAnalysis() {
     lastFetchOk=true;
     dot.className='status-dot live';
     setEl('status-text','Live · '+new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}));
-
-    // Sentiment en parallèle
     loadSentiment(currentAsset);
 
-  } catch(e) {
+  }catch(e){
     console.error(e);
     addAlert('sell','Erreur',e.message||'Problème inconnu');
     dot.className='status-dot'; setEl('status-text','Erreur');
     const atEl=document.getElementById('analysis-text');
-    atEl.textContent='Erreur : '+e.message;
-    atEl.classList.remove('analysis-placeholder');
+    atEl.textContent='Erreur : '+e.message; atEl.classList.remove('analysis-placeholder');
   }
-
   btn.disabled=false; btn.classList.remove('loading');
   btn.textContent='↗ Relancer l\'analyse IA';
-}
-
-
-// ── Render precision modules ──────────────────────────────────────────────
-
-function renderPatterns(patterns) {
-  const list = document.getElementById('pattern-list');
-  const count = document.getElementById('pattern-count');
-  if(!patterns || !patterns.length) {
-    count.textContent = '0 pattern';
-    list.innerHTML = '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:8px 0">Aucun pattern détecté sur cette bougie</div>';
-    return;
-  }
-  count.textContent = patterns.length + ' pattern' + (patterns.length>1?'s':'');
-  list.innerHTML = patterns.map(p => `
-    <div class="pattern-item">
-      <div class="pattern-dot ${p.type}"></div>
-      <div>
-        <div class="pattern-name">${p.name}</div>
-        <div class="pattern-desc">${p.desc}</div>
-      </div>
-      <div class="pattern-strength s${p.strength}">${'★'.repeat(p.strength)}${'☆'.repeat(3-p.strength)}</div>
-    </div>`).join('');
-}
-
-function renderConfluence(conf) {
-  if(!conf) return;
-  const {score,signal,confidence,signals,buyCount,sellCount,neutCount} = conf;
-  setEl('conf-score', score+'/100');
-  const fill=document.getElementById('conf-fill');
-  fill.style.width=score+'%';
-  fill.style.background=score>=65?'var(--green)':score<=35?'var(--red)':'#7850ff';
-  setEl('conf-buy',  buyCount+' ACHAT');
-  setEl('conf-sell', sellCount+' VENTE');
-  setEl('conf-neu',  neutCount+' NEUTRE');
-  const sigList = document.getElementById('conf-signals');
-  sigList.innerHTML = signals.map(s => {
-    const cls = s.verdict==='ACHAT'?'buy':s.verdict==='VENTE'?'sell':'neu';
-    const label = s.verdict==='ACHAT'?'▲ ACHAT':s.verdict==='VENTE'?'▼ VENTE':'— NEUTRE';
-    return `<div class="conf-signal">
-      <span class="conf-badge ${cls}">${label}</span>
-      <span class="conf-ind">${s.ind}</span>
-      <span class="conf-det">${s.detail}</span>
-    </div>`;
-  }).join('');
-}
-
-function renderFibonacci(fib, price, dec) {
-  if(!fib) return;
-  const fmt = n => Number(n).toFixed(dec);
-  setEl('fib-range', `${fmt(fib.swingLow)} → ${fmt(fib.swingHigh)}`);
-  const levels = [
-    {id:'fib236', val:fib.fib236},
-    {id:'fib382', val:fib.fib382},
-    {id:'fib500', val:fib.fib500},
-    {id:'fib618', val:fib.fib618},
-    {id:'fib786', val:fib.fib786},
-  ];
-  levels.forEach(({id,val}) => {
-    setEl(id, fmt(val));
-    const el = document.getElementById(id).parentElement;
-    const dist = Math.abs(price - val) / price;
-    el.classList.toggle('active', dist < 0.005);
-  });
-}
-
-function renderSR(sr, dec) {
-  if(!sr) return;
-  const fmt = n => Number(n).toFixed(dec);
-  const list = document.getElementById('sr-list');
-  const all = [
-    ...sr.resistances.map(r=>({...r,label:'Résistance',cls:'res'})),
-    ...sr.supports.map(s=>({...s,label:'Support',cls:'sup'})),
-  ].sort((a,b)=>b.price-a.price);
-  if(!all.length) {
-    list.innerHTML='<div style="font-family:var(--font-mono);font-size:12px;color:var(--text3);padding:8px 0">Pas assez de données pour calculer les zones</div>';
-    return;
-  }
-  list.innerHTML = all.map(z=>`
-    <div class="sr-item">
-      <span class="sr-type ${z.cls}">${z.label}</span>
-      <span class="sr-price">${fmt(z.price)}</span>
-      <span class="sr-str">${z.strength}</span>
-      <span class="sr-touches">${z.touches} touche${z.touches>1?'s':''}</span>
-    </div>`).join('');
 }
 
 // Init
