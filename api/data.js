@@ -318,6 +318,113 @@ async function fetchCoinGecko(cgId, tf) {
 
 // ── AI Analysis ───────────────────────────────────────────────────────────
 
+
+// ── TRADE ENGINE — Calcul du trade optimal ───────────────────────────────
+
+function calcATR(candles, period=14) {
+  if(!candles||candles.length<period+1) return candles?.[candles.length-1]?.close*0.005||0;
+  let atr=0;
+  for(let i=candles.length-period;i<candles.length;i++){
+    const tr=Math.max(
+      candles[i].high-candles[i].low,
+      Math.abs(candles[i].high-candles[i-1].close),
+      Math.abs(candles[i].low-candles[i-1].close)
+    );
+    atr+=tr;
+  }
+  return atr/period;
+}
+
+function computeTrade(price, confluence, fibonacci, sr, patterns, candles, dec) {
+  const score      = confluence?.score||50;
+  const confidence = confluence?.confidence||50;
+  const signals    = confluence?.signals||[];
+  const atr        = calcATR(candles);
+
+  // Direction du trade
+  const direction = score>=60?'LONG':score<=40?'SHORT':null;
+  if(!direction) return { direction:'NEUTRE', reason:'Signal trop faible — pas de trade recommandé. Attendre une meilleure opportunité.', score };
+
+  // Forces supplémentaires
+  const bullPatterns = (patterns||[]).filter(p=>p.type==='bullish').reduce((a,p)=>a+p.strength,0);
+  const bearPatterns = (patterns||[]).filter(p=>p.type==='bearish').reduce((a,p)=>a+p.strength,0);
+  const patternBoost = direction==='LONG' ? bullPatterns : bearPatterns;
+
+  // Niveau de conviction (0-100)
+  const conviction = Math.min(100, Math.round(confidence + patternBoost*3));
+
+  // Taille de position recommandée (% du capital)
+  const positionSize = conviction>=80?'2-3%':conviction>=65?'1-2%':'0.5-1%';
+  const riskLabel    = conviction>=80?'Élevée':conviction>=65?'Modérée':'Faible';
+
+  // ── Prix d'entrée ──
+  // Zone d'entrée optimale : légèrement retracée sur le prix actuel
+  const entryOffset = direction==='LONG' ? -atr*0.15 : atr*0.15;
+  const entry = parseFloat((price + entryOffset).toFixed(dec));
+
+  // ── Stop Loss ──
+  // Basé sur ATR x 1.5 + support/résistance le plus proche
+  let slBase = direction==='LONG'
+    ? entry - atr*1.5
+    : entry + atr*1.5;
+
+  // Affiner avec S/R
+  if(direction==='LONG' && sr?.supports?.length) {
+    const nearSup = sr.supports.filter(s=>s.price<entry).sort((a,b)=>b.price-a.price)[0];
+    if(nearSup && nearSup.price > slBase) slBase = nearSup.price - atr*0.3;
+  }
+  if(direction==='SHORT' && sr?.resistances?.length) {
+    const nearRes = sr.resistances.filter(r=>r.price>entry).sort((a,b)=>a.price-b.price)[0];
+    if(nearRes && nearRes.price < slBase) slBase = nearRes.price + atr*0.3;
+  }
+  const stopLoss = parseFloat(slBase.toFixed(dec));
+  const risk     = Math.abs(entry - stopLoss);
+
+  // ── Take Profits (ratio R:R) ──
+  const tp1 = parseFloat((direction==='LONG' ? entry+risk*1.5  : entry-risk*1.5).toFixed(dec));
+  const tp2 = parseFloat((direction==='LONG' ? entry+risk*3    : entry-risk*3).toFixed(dec));
+  const tp3 = parseFloat((direction==='LONG' ? entry+risk*5    : entry-risk*5).toFixed(dec));
+
+  // Affiner TP avec Fibonacci
+  if(fibonacci) {
+    const fibLevels = direction==='LONG'
+      ? [fibonacci.fib236, fibonacci.fib382, fibonacci.fib500].filter(f=>f&&f>entry)
+      : [fibonacci.fib618, fibonacci.fib786].filter(f=>f&&f<entry);
+    // TP1 = niveau Fib le plus proche si plus avantageux
+    if(fibLevels.length && direction==='LONG') {
+      const bestFib = fibLevels.sort((a,b)=>a-b)[0];
+      if(bestFib > tp1*0.98 && bestFib < tp2) {
+        // use fib as tp1 refinement — keep tp1 as is for simplicity
+      }
+    }
+  }
+
+  // ── Invalidation ──
+  const invalidation = direction==='LONG'
+    ? parseFloat((stopLoss - atr*0.5).toFixed(dec))
+    : parseFloat((stopLoss + atr*0.5).toFixed(dec));
+
+  // ── Ratio R:R ──
+  const rrRatio = parseFloat((risk>0 ? (Math.abs(tp2-entry)/risk).toFixed(2) : 0));
+
+  // ── Raison du trade ──
+  const buySignals  = signals.filter(s=>s.verdict==='ACHAT').map(s=>s.ind);
+  const sellSignals = signals.filter(s=>s.verdict==='VENTE').map(s=>s.ind);
+  const mainSignals = direction==='LONG' ? buySignals : sellSignals;
+
+  const reason = direction==='LONG'
+    ? `Signal LONG confirmé par : ${mainSignals.join(', ')}. ${bullPatterns>0?`Patterns haussiers détectés (force ${bullPatterns}).`:''}  Entrée sur retracement avec SL sous le support clé.`
+    : `Signal SHORT confirmé par : ${mainSignals.join(', ')}. ${bearPatterns>0?`Patterns baissiers détectés (force ${bearPatterns}).`:''} Entrée sur rejet avec SL au-dessus de la résistance clé.`;
+
+  return {
+    direction, conviction, positionSize, riskLabel,
+    entry, stopLoss, tp1, tp2, tp3, invalidation,
+    risk: parseFloat(risk.toFixed(dec)),
+    rrRatio, reason, atr: parseFloat(atr.toFixed(dec)),
+    score,
+  };
+}
+
 async function getAIAnalysis(sym, price, changePct, confluence, fibonacci, sr, patterns) {
   const dec=sym.dec;
   const fmt=n=>Number(n).toFixed(dec);
